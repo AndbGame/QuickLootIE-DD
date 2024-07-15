@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(
-	SamplePlugin
-	VERSION 0.7.5
+	QuickLootIEDD
+	VERSION 0.0.1
 	LANGUAGES CXX
 )
 
