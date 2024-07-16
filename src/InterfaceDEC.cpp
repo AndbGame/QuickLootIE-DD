@@ -77,7 +77,7 @@ namespace QuickLootDD
 
 	void QuickLootDD::InterfaceDeviouslyEnchantedChests::onQLDoTaked(RE::Actor* actor, std::vector<TakedItem> items, RE::TESObjectREFR* container, RE::TESForm* , bool )
 	{
-		if (!isReady.load(std::memory_order::relaxed) || actor != RE::PlayerCharacter::GetSingleton()) {
+		if (!isReady.load(std::memory_order::relaxed)) {
 			DEBUG("onQLDoTaked not loaded");
 			return;
 		}
@@ -176,7 +176,7 @@ namespace QuickLootDD
 
 	inline bool InterfaceDeviouslyEnchantedChests::isAllowedContainer(RE::TESObjectREFR* container)
 	{
-		return dt_containerformlist != nullptr && container != nullptr && dt_containerformlist->HasForm(container);
+		return dt_containerformlist != nullptr && container != nullptr && !container->IsLocked() && dt_containerformlist->HasForm(container);
 	}
 
 	inline bool InterfaceDeviouslyEnchantedChests::isAllowedActor(RE::Actor* actor)
