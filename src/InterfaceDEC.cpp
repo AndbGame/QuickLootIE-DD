@@ -139,7 +139,7 @@ namespace QuickLootDD
 		if (vm->FindBoundObject(handle, "dtraps_evaluateTrap", object)) {
 			CallbackPtr callback(new EmptyRequestCallback("dtraps_evaluateTrap"));
 			std::vector<RE::Actor*> followers = getNearestFollowers(actor);
-			int dt_origintype = 2;
+			int dt_origintype = 2; // Container
 			bool isEmpty = false;
 
 			auto args = RE::MakeFunctionArguments(std::forward<int>(dt_origintype), std::forward<RE::TESObjectREFR*>(container), std::forward<bool>(isEmpty), std::forward<std::vector<RE::Actor*>>(followers));
@@ -162,7 +162,7 @@ namespace QuickLootDD
 
 	inline std::vector<RE::Actor*> InterfaceDeviouslyEnchantedChests::getNearestFollowers(RE::Actor* actor)
 	{
-		auto ret = QuickLootDD::TESUtils::getNearestActorsInRangeByFilter(actor, 0, [&](RE::Actor* a_actor) {
+		auto ret = QuickLootDD::TESUtils::getNearestActorsInRangeByFilter(actor, 426, [&](RE::Actor* a_actor) {
 			if ((a_actor->IsPlayerTeammate() ||
 				a_actor->IsInFaction(CurrentFollowerFaction) ||
 					a_actor->IsInFaction(CurrentHireling)) &&
