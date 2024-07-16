@@ -27,6 +27,10 @@ namespace QuickLootDD
 		RE::BGSListForm* dt_containerformlist = nullptr;
 		RE::TESFaction* CurrentFollowerFaction = nullptr;
 		RE::TESFaction* CurrentHireling = nullptr;
+		struct
+		{
+			std::string_view ActorTypeNPC = "ActorTypeNPC";
+		} KeywordId;
 
 		std::atomic<bool> isReady = false;
 		std::atomic<bool> isBusy = false;
@@ -35,5 +39,6 @@ namespace QuickLootDD
 
         std::vector<RE::Actor*> getNearestFollowers(RE::Actor* actor);
 		bool isAllowedContainer(RE::TESObjectREFR* container);
+		bool isAllowedActor(RE::Actor* actor);
 	};
 }

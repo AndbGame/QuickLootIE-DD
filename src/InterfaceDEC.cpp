@@ -81,6 +81,10 @@ namespace QuickLootDD
 			DEBUG("onQLDoTaked not loaded");
 			return;
 		}
+		if (!isAllowedActor(actor)) {
+			DEBUG("onQLDoTaked Actor not allowed");
+			return;
+		}
 
 		if (actor->GetActorBase()->GetSex() != RE::SEX::kFemale) {
 			DEBUG("onQLDoTaked not female");
@@ -156,7 +160,7 @@ namespace QuickLootDD
 		setFree(isBusy);
 	}
 
-	std::vector<RE::Actor*> InterfaceDeviouslyEnchantedChests::getNearestFollowers(RE::Actor* actor)
+	inline std::vector<RE::Actor*> InterfaceDeviouslyEnchantedChests::getNearestFollowers(RE::Actor* actor)
 	{
 		auto ret = QuickLootDD::TESUtils::getNearestActorsInRangeByFilter(actor, 0, [&](RE::Actor* a_actor) {
 			if ((a_actor->IsPlayerTeammate() ||
@@ -169,8 +173,14 @@ namespace QuickLootDD
 		});
 		return ret;
 	}
-	bool InterfaceDeviouslyEnchantedChests::isAllowedContainer(RE::TESObjectREFR* container)
+
+	inline bool InterfaceDeviouslyEnchantedChests::isAllowedContainer(RE::TESObjectREFR* container)
 	{
 		return dt_containerformlist != nullptr && container != nullptr && dt_containerformlist->HasForm(container);
+	}
+
+	inline bool InterfaceDeviouslyEnchantedChests::isAllowedActor(RE::Actor* actor)
+	{
+		return actor == RE::PlayerCharacter::GetSingleton() && actor->HasKeywordString(KeywordId.ActorTypeNPC);
 	}
 }
