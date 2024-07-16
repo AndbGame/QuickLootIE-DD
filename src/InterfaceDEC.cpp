@@ -58,6 +58,7 @@ namespace QuickLootDD
 	}
 
 		LOAD_FORM(dtraps_Quest, RE::TESQuest, 0x000D62, "dD Enchanted Chests.esp");
+		LOAD_FORM(dt_containerformlist, RE::BGSListForm, 0x001829, "dD Enchanted Chests.esp");
 		LOAD_FORM(CurrentFollowerFaction, RE::TESFaction, 0x05C84E, "Skyrim.esm");
 		LOAD_FORM(CurrentHireling, RE::TESFaction, 0x0BD738, "Skyrim.esm");
 
@@ -83,6 +84,11 @@ namespace QuickLootDD
 
 		if (actor->GetActorBase()->GetSex() != RE::SEX::kFemale) {
 			DEBUG("onQLDoTaked not female");
+			return;
+        }
+
+        if (!isAllowedContainer(container)) {
+			DEBUG("onQLDoTaked not allowed container <{:08X}:{}>", container ? container->GetFormID() : 0, container ? container->GetName() : "");
 			return;
         }
 
@@ -162,5 +168,9 @@ namespace QuickLootDD
 			return false;
 		});
 		return ret;
+	}
+	bool InterfaceDeviouslyEnchantedChests::isAllowedContainer(RE::TESObjectREFR* container)
+	{
+		return dt_containerformlist != nullptr && container != nullptr && dt_containerformlist->HasForm(container);
 	}
 }

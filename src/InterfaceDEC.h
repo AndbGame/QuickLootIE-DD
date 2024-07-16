@@ -24,6 +24,7 @@ namespace QuickLootDD
 
 	protected:
 		RE::TESQuest* dtraps_Quest = nullptr;
+		RE::BGSListForm* dt_containerformlist = nullptr;
 		RE::TESFaction* CurrentFollowerFaction = nullptr;
 		RE::TESFaction* CurrentHireling = nullptr;
 
@@ -33,5 +34,6 @@ namespace QuickLootDD
 		clock::time_point _lastTriggered;
 
         std::vector<RE::Actor*> getNearestFollowers(RE::Actor* actor);
+		bool isAllowedContainer(RE::TESObjectREFR* container);
 	};
 }
