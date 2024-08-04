@@ -13,7 +13,16 @@
     "magic-enum",
     "nlohmann-json",
     "clib-util",
-    "openvr"
+    "openvr",
+    "boost-property-tree",
+    "boost-algorithm",
+    {
+      "name": "imgui",
+      "features": [
+        "dx11-binding",
+        "win32-binding"
+      ]
+    }
   ],
   "builtin-baseline": "467f9a6a2704dfae762c0d7d634839fdfbabfeb9"
 }

@@ -1,6 +1,8 @@
 #define DLLEXPORT __declspec(dllexport)
 
 #include "InterfaceQuickLootIE.h"
+#include "Config.h"
+#include "UI.h"
 
 void InitializeLog([[maybe_unused]] spdlog::level::level_enum a_level = spdlog::level::trace)
 {
@@ -26,22 +28,22 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 {
 	switch (a_msg->type) {
 	case SKSE::MessagingInterface::kPostLoad:
-		if (!QuickLootDD::InterfaceQuickLootIE::Init(SKSE::GetMessagingInterface())) {
+		if (!QuickLootDD::InterfaceQuickLootIE::Init()) {
 			ERROR("Error in QuickLootIE integration");
 		}
-		DEBUG("DeviouslyEnchantedChests Initialize");
-		QuickLootDD::InterfaceQuickLootIE::setDEC(new QuickLootDD::InterfaceDeviouslyEnchantedChests());
-		QuickLootDD::InterfaceQuickLootIE::getDEC()->Init();
+		if (!QuickLootDD::InterfaceDeviouslyEnchantedChests::Init()) {
+			ERROR("Error in DEC integration");
+		}
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
-		DEBUG("DeviouslyEnchantedChests LoadForms");
-		QuickLootDD::InterfaceQuickLootIE::getDEC()->LoadForms();
+		QuickLootDD::InterfaceDeviouslyEnchantedChests::LoadForms();
+		QuickLootDD::UI::OnDataLoaded();
 		break;
 	case SKSE::MessagingInterface::kPostLoadGame:
 		[[fallthrough]];
 	case SKSE::MessagingInterface::kNewGame:
 		DEBUG("DeviouslyEnchantedChests Reset");
-		QuickLootDD::InterfaceQuickLootIE::getDEC()->Reset();
+		QuickLootDD::InterfaceDeviouslyEnchantedChests::Reset();
 		break;
 	}
 }
@@ -51,10 +53,17 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	InitializeLog();
 	LOG("Loaded plugin {} {}", Plugin::NAME, Plugin::VERSION.string());
 	SKSE::Init(a_skse);
+	QuickLootDD::Config::readIniConfig();
 
     auto message = SKSE::GetMessagingInterface();
 	if (!message->RegisterListener(MessageHandler)) {
 		return false;
+	}
+
+    if (QuickLootDD::Config::visualiseChance) {
+		if (!QuickLootDD::UI::Install()) {
+			ERROR("Failed to install UI Renderer"sv);
+		}
 	}
 
 	return true;

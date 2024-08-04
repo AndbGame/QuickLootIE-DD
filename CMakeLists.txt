@@ -30,6 +30,12 @@ include(XSEPlugin)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(xbyak CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(Boost REQUIRED COMPONENTS 
+	property_tree
+	algorithm
+)
+find_package(imgui CONFIG REQUIRED)
+
 find_path(CLIB_UTIL_INCLUDE_DIRS "ClibUtil/utils.hpp")
 
 target_include_directories(
@@ -44,6 +50,9 @@ target_link_libraries(
 	magic_enum::magic_enum
 	xbyak::xbyak
 	nlohmann_json::nlohmann_json
+	Boost::property_tree
+	Boost::algorithm
+	imgui::imgui
 )
 
 # https://gitlab.kitware.com/cmake/cmake/-/issues/24922#note_1371990
