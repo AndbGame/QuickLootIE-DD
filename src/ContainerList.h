@@ -11,16 +11,24 @@ namespace QuickLootDD
 		float lastUsed = 0.0f;
 	};
 
-    // TODO
 	class ContainerList : SpinLock
 	{
 	public:
-		ContainerData getData(RE::FormID formId)
-		{
-			return _containerData[formId];
-        }
+		ContainerList();
+		~ContainerList();
+
+		void RevertState(SKSE::SerializationInterface* serializationInterface);
+		void SaveState(SKSE::SerializationInterface* serializationInterface);
+		void LoadState(SKSE::SerializationInterface* serializationInterface);
+
+		bool getContainerData(RE::TESForm* form, ContainerData* data, bool onlyTry = false);
+		void setContainerChance(RE::TESForm* form, double chance, bool onlyTry = false);
+		void setTriggered(RE::TESForm* form, bool onlyTry = false);
+
+		void Invalidate(bool force = false);
+
 	protected:
-		friend class InterfaceDeviouslyEnchantedChests; // TODO: temporary
 		std::map<RE::FormID, ContainerData> _containerData = {};
+		float _lastInvalidationTime = 0;
 	};
 }

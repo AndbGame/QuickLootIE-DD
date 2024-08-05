@@ -7,6 +7,22 @@
 
 namespace QuickLootDD
 {
+	struct UIItemInfoData
+	{
+		double itemChance = 0.0;
+		std::size_t count = 0;
+		double totalChance = 0.0;
+	};
+	static const std::size_t UIItemInfoDataLength = 5;
+	struct UIInfoData
+	{
+		bool isCooldown = false;
+		double containerChance = 0.0;
+		double locationChance = 0.0;
+		UIItemInfoData itemChance[UIItemInfoDataLength];
+		std::size_t itemCount = 0;
+	};
+
 	class UI
 	{
 		struct WndProcHook
@@ -66,7 +82,7 @@ namespace QuickLootDD
 		static void renderUI();
 
         static inline std::atomic<bool> ShowLootInfo = false;
-		static inline std::atomic<InterfaceDeviouslyEnchantedChests::UIInfoData> currentLootInfo = {};
+		static inline std::atomic<UIInfoData> currentLootInfo = {};
 
 		static bool isNeedRenderFrame();
 		static void SetWindowDimensions(float a_offsetX = 0.f, float a_offsetY = 0.f, float a_sizeX = -1.f, float a_sizeY = -1.f, WindowAlignment a_alignment = WindowAlignment::kTopLeft, ImVec2 a_sizeMin = ImVec2(0, 0), ImVec2 a_sizeMax = ImVec2(0, 0), ImGuiCond_ a_cond = ImGuiCond_FirstUseEver);
@@ -85,6 +101,6 @@ namespace QuickLootDD
 		static void OnDataLoaded();
 
         static void Close();
-		static void ShowDECInfo(InterfaceDeviouslyEnchantedChests::UIInfoData data);
+		static void ShowDECInfo(UIInfoData data);
 	};
 }

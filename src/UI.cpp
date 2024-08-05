@@ -259,7 +259,7 @@ namespace QuickLootDD
 		ShowLootInfo.store(false);
 	}
 
-	void UI::ShowDECInfo(InterfaceDeviouslyEnchantedChests::UIInfoData data)
+	void UI::ShowDECInfo(UIInfoData data)
 	{
 		currentLootInfo.store(data);
 		ShowLootInfo.store(true);

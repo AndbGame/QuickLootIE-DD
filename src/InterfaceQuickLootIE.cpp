@@ -3,6 +3,7 @@
 #include <QuickLootIntegrations.h>
 #include <PluginRequests\RequestClient.h>
 #include "Config.h"
+#include "Manager.h"
 
 namespace QuickLootDD
 {
@@ -72,31 +73,31 @@ namespace QuickLootDD
         }
 	}
 
-	void DECTakenHandler(QuickLoot::Integrations::TakenHandler::TakenEvent* evt)
+	void TakenHandler(QuickLoot::Integrations::TakenHandler::TakenEvent* evt)
 	{
 		if (evt->actor && evt->container && evt->elementsCount > 0) {
-			QuickLootDD::InterfaceDeviouslyEnchantedChests::onQLDoTaked(evt->actor, evt->elements, evt->elementsCount, evt->container);
+			QuickLootDD::Manager::onQLDoTaked(evt->actor, evt->elements, evt->elementsCount, evt->container);
         }
 	};
 
-	void DECLootMenuHandler(QuickLoot::Integrations::LootMenuHandler::LootMenuEvent* evt)
+	void LootMenuHandler(QuickLoot::Integrations::LootMenuHandler::LootMenuEvent* evt)
 	{
 		switch (evt->status) {
 		case QuickLoot::Integrations::LootMenuHandler::Status::INVALIDATE:
-			QuickLootDD::InterfaceDeviouslyEnchantedChests::onQLDoInvalidated(evt->actor, evt->container, evt->elements, evt->elementsCount);
+			QuickLootDD::Manager::onQLDoInvalidated(evt->actor, evt->container, evt->elements, evt->elementsCount);
 			break;
 		case QuickLoot::Integrations::LootMenuHandler::Status::OPEN:
-			QuickLootDD::InterfaceDeviouslyEnchantedChests::onQLDoOpened(evt->actor, evt->container);
+			QuickLootDD::Manager::onQLDoOpened(evt->actor, evt->container);
 			break;
 		case QuickLoot::Integrations::LootMenuHandler::Status::CLOSE:
-			QuickLootDD::InterfaceDeviouslyEnchantedChests::onQLDoClosed(evt->actor, evt->container);
+			QuickLootDD::Manager::onQLDoClosed(evt->actor, evt->container);
 			break;
         }
 	};
 
-	void DECSelectHandler(QuickLoot::Integrations::SelectHandler::SelectEvent* evt)
+	void SelectHandler(QuickLoot::Integrations::SelectHandler::SelectEvent* evt)
 	{
-		QuickLootDD::InterfaceDeviouslyEnchantedChests::onQLDoSelect(evt->actor, evt->elements, evt->elementsCount, evt->container);
+		QuickLootDD::Manager::onQLDoSelect(evt->actor, evt->elements, evt->elementsCount, evt->container);
 	};
 
 	bool InterfaceQuickLootIE::Init()
@@ -117,16 +118,16 @@ namespace QuickLootDD
 			}
 		}
 
-		if (!QuickLoot::Integrations::QuickLootAPI::RegisterTakenHandler(DECTakenHandler)) {
-			ERROR("DECTakenHandler for QuickLootAPI not registered");
+		if (!QuickLoot::Integrations::QuickLootAPI::RegisterTakenHandler(TakenHandler)) {
+			ERROR("TakenHandler for QuickLootAPI not registered");
 		}
 
-		if (!QuickLoot::Integrations::QuickLootAPI::RegisterLootMenuHandler(DECLootMenuHandler)) {
-			ERROR("DECLootMenuHandler for QuickLootAPI not registered");
+		if (!QuickLoot::Integrations::QuickLootAPI::RegisterLootMenuHandler(LootMenuHandler)) {
+			ERROR("LootMenuHandler for QuickLootAPI not registered");
 		}
 
-		if (!QuickLoot::Integrations::QuickLootAPI::RegisterSelectHandler(DECSelectHandler)) {
-			ERROR("DECSelectHandler for QuickLootAPI not registered");
+		if (!QuickLoot::Integrations::QuickLootAPI::RegisterSelectHandler(SelectHandler)) {
+			ERROR("SelectHandler for QuickLootAPI not registered");
 		}
 		
 		return true;

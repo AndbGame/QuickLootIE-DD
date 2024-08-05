@@ -1,6 +1,6 @@
-#include "TESUtils.h"
+#include "Utils.h"
 
-namespace QuickLootDD::TESUtils
+namespace QuickLootDD::Utils
 {
 	void forEachActorsInRange(RE::Actor* target, float a_range, std::function<bool(RE::Actor* a_actor)> a_callback)
 	{

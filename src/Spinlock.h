@@ -2,7 +2,7 @@
 
 #include <thread>
 
-#define DEBUG_SPINLOCK 0
+#define DEBUG_SPINLOCK 1
 
 namespace QuickLootDD
 {
@@ -17,10 +17,9 @@ namespace QuickLootDD
 		SpinLock() :
 			_owningThread(0), _lockCount(0){};
 
-		void spinLock(std::uint32_t a_pauseAttempts = 0)
+		void spinLock(std::uint32_t a_pauseAttempts = 0) noexcept
 		{
 			std::uint32_t myThreadID = std::this_thread::get_id()._Get_underlying_id();
-
 			_mm_lfence();
 			if (_owningThread == myThreadID) {
 				::_InterlockedIncrement(&_lockCount);
@@ -63,7 +62,26 @@ namespace QuickLootDD
 				_mm_sfence();
 			}
 		}
-		void spinUnlock()
+
+		bool trySpinLock() noexcept
+		{
+			std::uint32_t myThreadID = std::this_thread::get_id()._Get_underlying_id();
+			_mm_lfence();
+			if (_owningThread == myThreadID) {
+				::_InterlockedIncrement(&_lockCount);
+				return true;
+			} else {
+				if (::_InterlockedCompareExchange(&_lockCount, 1, 0)) {
+					_mm_lfence();
+					return false;
+				}
+				_owningThread = myThreadID;
+				_mm_sfence();
+				return true;
+			}
+		}
+
+		void spinUnlock() noexcept
 		{
 			std::uint32_t myThreadID = std::this_thread::get_id()._Get_underlying_id();
 

@@ -1,6 +1,6 @@
 #include "Serialization.h"
 
-#include "InterfaceDEC.h"
+#include "Manager.h"
 
 namespace QuickLootDD
 {
@@ -28,8 +28,8 @@ namespace QuickLootDD
 			}
 			logger::info("Loading record {}", type);
 			switch (type) {
-			case sInterfaceDeviouslyEnchantedChests:
-				InterfaceDeviouslyEnchantedChests::stateLoad(serializationInterface);
+			case sManager:
+				Manager::LoadState(serializationInterface);
 				break;
 			default:
 				break;
@@ -39,8 +39,8 @@ namespace QuickLootDD
 	void Serialization::SaveCallback(SKSE::SerializationInterface* serializationInterface)
 	{
 		TRACE("Serialization::Save");
-		if (serializationInterface->OpenRecord(sInterfaceDeviouslyEnchantedChests, sVersion)) {
-			InterfaceDeviouslyEnchantedChests::stateSave(serializationInterface);
+		if (serializationInterface->OpenRecord(sManager, sVersion)) {
+			Manager::SaveState(serializationInterface);
 		} else {
 			ERROR("Failed to open co-save record <InterfaceDeviouslyEnchantedChests> for write")
         }
@@ -48,6 +48,6 @@ namespace QuickLootDD
 	void Serialization::RevertCallback(SKSE::SerializationInterface* serializationInterface)
 	{
 		TRACE("Serialization::Revert");
-		InterfaceDeviouslyEnchantedChests::stateRevert(serializationInterface);
+		Manager::RevertState(serializationInterface);
 	}
 }

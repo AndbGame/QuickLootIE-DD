@@ -9,7 +9,8 @@ namespace QuickLootDD
 		{
 			sVersion = 1,
 
-			sInterfaceDeviouslyEnchantedChests = 'idec',
+			sManager = 'mng',
+			sContainerList = 'cnt',
 		};
 
 		struct ContainerData_v1

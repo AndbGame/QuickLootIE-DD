@@ -1,6 +1,7 @@
 #define DLLEXPORT __declspec(dllexport)
 
 #include "InterfaceQuickLootIE.h"
+#include "Manager.h"
 #include "Config.h"
 #include "UI.h"
 #include "Serialization.h"
@@ -35,6 +36,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		QuickLootDD::InterfaceDeviouslyEnchantedChests::LoadForms();
+		QuickLootDD::Manager::LoadForms();
 		QuickLootDD::UI::OnDataLoaded();
 		break;
 	case SKSE::MessagingInterface::kPostLoadGame:
@@ -54,6 +56,10 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
     auto message = SKSE::GetMessagingInterface();
 	if (!message->RegisterListener(MessageHandler)) {
 		return false;
+	}
+
+	if (!QuickLootDD::Manager::Init()) {
+		ERROR("Error Initialization");
 	}
 
 	if (!QuickLootDD::InterfaceDeviouslyEnchantedChests::Init()) {
