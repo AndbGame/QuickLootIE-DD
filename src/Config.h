@@ -13,7 +13,6 @@ namespace QuickLootDD
 		};
 		static inline std::map<std::string, RawItemDefinition> rawItemDefinitions;
 
-		static inline bool useDECContainerList = true;
 		static inline bool allowDeadBody = false;
 		static inline bool allowActorTypeNPC = false;
 		static inline bool allowActorTypeCreature = false;
@@ -63,6 +62,9 @@ namespace QuickLootDD
 		static inline bool QuickLootLogger = false;
 
 		static inline bool useCoSave = true;
+        
+		static inline bool useDECContainerList = true;
+		static inline bool useDEC = true;
 
 		static void readIniConfig();
 

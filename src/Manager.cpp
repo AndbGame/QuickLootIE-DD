@@ -110,9 +110,11 @@ namespace QuickLootDD
 		containerList.setTriggered(container, true);
 		containerList.setContainerChance(container, 0, true);
 
-		// Fire DEC
-		LOG("onQLDoTaked Fire DEC");
-		InterfaceDeviouslyEnchantedChests::TriggerTrap(container);
+        if (QuickLootDD::Config::useDEC) {
+			// Fire DEC
+			LOG("onQLDoTaked Fire DEC");
+			InterfaceDeviouslyEnchantedChests::TriggerTrap(container);
+		}
 
 		containerList.Invalidate();
 

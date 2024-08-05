@@ -34,97 +34,102 @@ namespace QuickLootDD
 		auto iniConfig = boost::property_tree::ptree();
 		try {
 			boost::property_tree::ini_parser::read_ini("Data\\skse\\plugins\\QuickLootIEDD.ini", iniConfig);
-                        
-			useCoSave = iniConfig.get<bool>("Main.useCoSave", true);
 
-			useDECContainerList = iniConfig.get<bool>("DEC.useDECContainerList", true);
-			allowDeadBody = iniConfig.get<bool>("DEC.allowDeadBody", false);
-			allowActorTypeNPC = iniConfig.get<bool>("DEC.allowActorTypeNPC", false);
-			allowActorTypeCreature = iniConfig.get<bool>("DEC.allowActorTypeCreature", false);
-			allowActorTypeAnimal = iniConfig.get<bool>("DEC.allowActorTypeAnimal", false);
-			allowActorTypeDragon = iniConfig.get<bool>("DEC.allowActorTypeDragon", false);
-			allowOther = iniConfig.get<bool>("DEC.allowOther", false);
-
-			baseChanceMin = iniConfig.get<double>("DEC.baseChanceMin", 0.01);
+			/* MAIN */
+			baseChanceMin = iniConfig.get<double>("MAIN.baseChanceMin", 0.01);
             if (baseChanceMin < 0) {
-				WARN("readIniConfig: incorrect DEC.baseChanceMin, adjusted to `0.0`");
+				WARN("readIniConfig: incorrect MAIN.baseChanceMin, adjusted to `0.0`");
 				baseChanceMin = 0.0;
 			}
 			if (baseChanceMin > 1) {
-				WARN("readIniConfig: incorrect DEC.baseChanceMin, adjusted to `1.0`");
+				WARN("readIniConfig: incorrect MAIN.baseChanceMin, adjusted to `1.0`");
 				baseChanceMin = 1.0;
 			}
 
-			baseChanceMax = iniConfig.get<double>("DEC.baseChanceMax", 0.1);
+			baseChanceMax = iniConfig.get<double>("MAIN.baseChanceMax", 0.1);
 			if (baseChanceMax < baseChanceMin) {
-				WARN("readIniConfig: incorrect DEC.baseChanceMax, adjusted to `DEC.baseChanceMin`");
+				WARN("readIniConfig: incorrect MAIN.baseChanceMax, adjusted to `MAIN.baseChanceMin`");
 				baseChanceMax = baseChanceMin;
 			}
 
-			chanceLimit = iniConfig.get<double>("DEC.chanceLimit", 0.5);
+			chanceLimit = iniConfig.get<double>("MAIN.chanceLimit", 0.5);
 			if (chanceLimit < 0) {
-				WARN("readIniConfig: incorrect DEC.chanceLimit, adjusted to `0.0`");
+				WARN("readIniConfig: incorrect MAIN.chanceLimit, adjusted to `0.0`");
 				chanceLimit = 0.0;
 			}
 			if (baseChanceMin > 1) {
-				WARN("readIniConfig: incorrect DEC.chanceLimit, adjusted to `1.0`");
+				WARN("readIniConfig: incorrect MAIN.chanceLimit, adjusted to `1.0`");
 				chanceLimit = 1.0;
 			}
 
-			containerTriggerCooldown = iniConfig.get<int>("DEC.containerTriggerCooldown", 60);
+			containerTriggerCooldown = iniConfig.get<int>("MAIN.containerTriggerCooldown", 60);
 
-			increaseChanceMultiplierMin = iniConfig.get<double>("DEC.increaseChanceMultiplierMin", 1.01);
+			increaseChanceMultiplierMin = iniConfig.get<double>("MAIN.increaseChanceMultiplierMin", 1.01);
 			if (increaseChanceMultiplierMin < 1) {
-				WARN("readIniConfig: incorrect DEC.increaseChanceMultiplierMin, adjusted to `1.0`");
+				WARN("readIniConfig: incorrect MAIN.increaseChanceMultiplierMin, adjusted to `1.0`");
 				increaseChanceMultiplierMin = 1.0;
 			}
 
-			increaseChanceMultiplierMax = iniConfig.get<double>("DEC.increaseChanceMultiplierMax", 1.1);
+			increaseChanceMultiplierMax = iniConfig.get<double>("MAIN.increaseChanceMultiplierMax", 1.1);
 			if (increaseChanceMultiplierMax < increaseChanceMultiplierMin) {
-				WARN("readIniConfig: incorrect DEC.increaseChanceMultiplierMax, adjusted to `DEC.increaseChanceMultiplierMin`");
+				WARN("readIniConfig: incorrect MAIN.increaseChanceMultiplierMax, adjusted to `MAIN.increaseChanceMultiplierMin`");
 				increaseChanceMultiplierMax = increaseChanceMultiplierMin;
 			}
 
-			containerChanceCooldown = iniConfig.get<int>("DEC.containerChanceCooldown", 3600);
-			resetChanceOnLastItem = iniConfig.get<bool>("DEC.resetChanceOnLastItem", true);
+			containerChanceCooldown = iniConfig.get<int>("MAIN.containerChanceCooldown", 3600);
+			resetChanceOnLastItem = iniConfig.get<bool>("MAIN.resetChanceOnLastItem", true);
 
-			containerLimit = iniConfig.get<int>("DEC.containerLimit", 100);
-			containerMaxLimitForInvalidate = iniConfig.get<int>("DEC.containerMaxLimitForInvalidate", 0);
+			containerLimit = iniConfig.get<int>("MAIN.containerLimit", 100);
+			containerMaxLimitForInvalidate = iniConfig.get<int>("MAIN.containerMaxLimitForInvalidate", 0);
 			if (containerMaxLimitForInvalidate < containerLimit) {
 				containerMaxLimitForInvalidate = containerLimit * 2;
-				WARN("readIniConfig: incorrect DEC.containerMaxLimitForInvalidate, adjusted to {}", containerMaxLimitForInvalidate);
+				WARN("readIniConfig: incorrect MAIN.containerMaxLimitForInvalidate, adjusted to {}", containerMaxLimitForInvalidate);
             }
 
-            SafeLocations = ini_string_to_array(iniConfig.get<std::string>("DEC.SafeLocations", ""));
+            SafeLocations = ini_string_to_array(iniConfig.get<std::string>("MAIN.SafeLocations", ""));
 
-			CityLocations = ini_string_to_array(iniConfig.get<std::string>("DEC.CityLocations", ""));
-			CityChanceMultiplier = iniConfig.get<double>("DEC.CityChanceMultiplier", 1.0);
+			CityLocations = ini_string_to_array(iniConfig.get<std::string>("MAIN.CityLocations", ""));
+			CityChanceMultiplier = iniConfig.get<double>("MAIN.CityChanceMultiplier", 1.0);
 
-			WildernessLocations = ini_string_to_array(iniConfig.get<std::string>("DEC.WildernessLocations", ""));
-			WildernessChanceMultiplier = iniConfig.get<double>("DEC.WildernessChanceMultiplier", 1.0);
+			WildernessLocations = ini_string_to_array(iniConfig.get<std::string>("MAIN.WildernessLocations", ""));
+			WildernessChanceMultiplier = iniConfig.get<double>("MAIN.WildernessChanceMultiplier", 1.0);
 
-			DungeonLocations = ini_string_to_array(iniConfig.get<std::string>("DEC.DungeonLocations", ""));
-			DungeonChanceMultiplier = iniConfig.get<double>("DEC.DungeonChanceMultiplier", 1.0);
+			DungeonLocations = ini_string_to_array(iniConfig.get<std::string>("MAIN.DungeonLocations", ""));
+			DungeonChanceMultiplier = iniConfig.get<double>("MAIN.DungeonChanceMultiplier", 1.0);
 
+			allowDeadBody = iniConfig.get<bool>("MAIN.allowDeadBody", false);
+			allowActorTypeNPC = iniConfig.get<bool>("MAIN.allowActorTypeNPC", false);
+			allowActorTypeCreature = iniConfig.get<bool>("MAIN.allowActorTypeCreature", false);
+			allowActorTypeAnimal = iniConfig.get<bool>("MAIN.allowActorTypeAnimal", false);
+			allowActorTypeDragon = iniConfig.get<bool>("MAIN.allowActorTypeDragon", false);
+			allowOther = iniConfig.get<bool>("MAIN.allowOther", false);
 
-			useItemChanceMultiplier = iniConfig.get<bool>("DEC.useItemChanceMultiplier", false);
-			useCountOfItemsChanceMultiplier = iniConfig.get<bool>("DEC.useCountOfItemsChanceMultiplier", false);
+			useItemChanceMultiplier = iniConfig.get<bool>("MAIN.useItemChanceMultiplier", false);
+			useCountOfItemsChanceMultiplier = iniConfig.get<bool>("MAIN.useCountOfItemsChanceMultiplier", false);
             
-            ScrollItemChanceMultiplier = iniConfig.get<double>("DEC.ScrollItemChanceMultiplier", 1.0);
-			ArmorItemChanceMultiplier = iniConfig.get<double>("DEC.ArmorItemChanceMultiplier", 1.0);
-			BookItemChanceMultiplier = iniConfig.get<double>("DEC.BookItemChanceMultiplier", 1.0);
-			IngredientItemChanceMultiplier = iniConfig.get<double>("DEC.IngredientItemChanceMultiplier", 1.0);
-			LightItemChanceMultiplier = iniConfig.get<double>("DEC.LightItemChanceMultiplier", 1.0);
-			MiscItemChanceMultiplier = iniConfig.get<double>("DEC.MiscItemChanceMultiplier", 1.0);
-			WeaponItemChanceMultiplier = iniConfig.get<double>("DEC.WeaponItemChanceMultiplier", 1.0);
-			AmmoItemChanceMultiplier = iniConfig.get<double>("DEC.AmmoItemChanceMultiplier", 1.0);
-			KeyMasterItemChanceMultiplier = iniConfig.get<double>("DEC.KeyMasterItemChanceMultiplier", 1.0);
-			AlchemyItemChanceMultiplier = iniConfig.get<double>("DEC.AlchemyItemChanceMultiplier", 1.0);
-			SoulGemItemChanceMultiplier = iniConfig.get<double>("DEC.SoulGemItemChanceMultiplier", 1.0);
+            ScrollItemChanceMultiplier = iniConfig.get<double>("MAIN.ScrollItemChanceMultiplier", 1.0);
+			ArmorItemChanceMultiplier = iniConfig.get<double>("MAIN.ArmorItemChanceMultiplier", 1.0);
+			BookItemChanceMultiplier = iniConfig.get<double>("MAIN.BookItemChanceMultiplier", 1.0);
+			IngredientItemChanceMultiplier = iniConfig.get<double>("MAIN.IngredientItemChanceMultiplier", 1.0);
+			LightItemChanceMultiplier = iniConfig.get<double>("MAIN.LightItemChanceMultiplier", 1.0);
+			MiscItemChanceMultiplier = iniConfig.get<double>("MAIN.MiscItemChanceMultiplier", 1.0);
+			WeaponItemChanceMultiplier = iniConfig.get<double>("MAIN.WeaponItemChanceMultiplier", 1.0);
+			AmmoItemChanceMultiplier = iniConfig.get<double>("MAIN.AmmoItemChanceMultiplier", 1.0);
+			KeyMasterItemChanceMultiplier = iniConfig.get<double>("MAIN.KeyMasterItemChanceMultiplier", 1.0);
+			AlchemyItemChanceMultiplier = iniConfig.get<double>("MAIN.AlchemyItemChanceMultiplier", 1.0);
+			SoulGemItemChanceMultiplier = iniConfig.get<double>("MAIN.SoulGemItemChanceMultiplier", 1.0);
 
             
-			visualiseChance = iniConfig.get<bool>("DEC.visualiseChance", false);
-			QuickLootLogger = iniConfig.get<bool>("DEC.QuickLootLogger", false);
+			visualiseChance = iniConfig.get<bool>("MAIN.visualiseChance", false);
+			QuickLootLogger = iniConfig.get<bool>("MAIN.QuickLootLogger", false);
+			useCoSave = iniConfig.get<bool>("MAIN.useCoSave", true);
+
+            /* DEC */
+
+			useDEC = iniConfig.get<bool>("DEC.useDEC", true);
+			useDECContainerList = iniConfig.get<bool>("DEC.useDECContainerList", true);
+
+            /* ITEMS */
 
             boost::property_tree::ptree items = iniConfig.get_child("ITEMS");
 			std::string::size_type name_start_pos = 5;
