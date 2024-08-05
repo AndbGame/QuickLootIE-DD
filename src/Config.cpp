@@ -34,6 +34,8 @@ namespace QuickLootDD
 		auto iniConfig = boost::property_tree::ptree();
 		try {
 			boost::property_tree::ini_parser::read_ini("Data\\skse\\plugins\\QuickLootIEDD.ini", iniConfig);
+                        
+			useCoSave = iniConfig.get<bool>("Main.useCoSave", true);
 
 			useDECContainerList = iniConfig.get<bool>("DEC.useDECContainerList", true);
 			allowDeadBody = iniConfig.get<bool>("DEC.allowDeadBody", false);
@@ -87,6 +89,11 @@ namespace QuickLootDD
 			resetChanceOnLastItem = iniConfig.get<bool>("DEC.resetChanceOnLastItem", true);
 
 			containerLimit = iniConfig.get<int>("DEC.containerLimit", 100);
+			containerMaxLimitForInvalidate = iniConfig.get<int>("DEC.containerMaxLimitForInvalidate", 0);
+			if (containerMaxLimitForInvalidate < containerLimit) {
+				containerMaxLimitForInvalidate = containerLimit * 2;
+				WARN("readIniConfig: incorrect DEC.containerMaxLimitForInvalidate, adjusted to {}", containerMaxLimitForInvalidate);
+            }
 
             SafeLocations = ini_string_to_array(iniConfig.get<std::string>("DEC.SafeLocations", ""));
 
@@ -118,7 +125,6 @@ namespace QuickLootDD
             
 			visualiseChance = iniConfig.get<bool>("DEC.visualiseChance", false);
 			QuickLootLogger = iniConfig.get<bool>("DEC.QuickLootLogger", false);
-
 
             boost::property_tree::ptree items = iniConfig.get_child("ITEMS");
 			std::string::size_type name_start_pos = 5;

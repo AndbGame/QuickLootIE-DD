@@ -179,21 +179,21 @@ namespace QuickLootDD
 	{
 		func();
 
-		INFO("D3DInit Hooked!");
+		TRACE("D3DInit Hooked!");
 		auto render_manager = RE::BSGraphics::Renderer::GetSingleton();
 		if (!render_manager) {
 			ERROR("Cannot find render manager. Initialization failed!");
 			return;
 		}
 
-		INFO("Getting swapchain...");
+		TRACE("Getting swapchain...");
 		auto swapchain = render_manager->GetCurrentRenderWindow()->swapChain;
 		if (!swapchain) {
 			ERROR("Cannot find swapchain. Initialization failed!");
 			return;
 		}
 
-		INFO("Getting swapchain desc...");
+		TRACE("Getting swapchain desc...");
 		REX::W32::DXGI_SWAP_CHAIN_DESC sd{};
 		if (swapchain->GetDesc(std::addressof(sd)) < 0) {
 			ERROR("IDXGISwapChain::GetDesc failed.");
@@ -205,7 +205,7 @@ namespace QuickLootDD
 		device = render_data.forwarder;
 		context = render_data.context;
 
-		INFO("Initializing ImGui...");
+		TRACE("Initializing ImGui...");
 		ImGui::CreateContext();
 		if (!ImGui_ImplWin32_Init((void*)(sd.outputWindow))) {
 			ERROR("ImGui initialization failed (Win32)");
@@ -220,7 +220,7 @@ namespace QuickLootDD
 		GetClientRect((HWND)(sd.outputWindow), &rect);
 		ImGui::GetIO().DisplaySize = ImVec2((float)(rect.right - rect.left), (float)(rect.bottom - rect.top));
 
-		INFO("ImGui initialized!");
+		LOG("ImGui initialized!");
 
 		initialized.store(true);
 

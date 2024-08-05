@@ -3,6 +3,7 @@
 #include "TESUtils.h"
 #include "Config.h"
 #include "UI.h"
+#include "Serialization.h"
 
 namespace QuickLootDD
 {
@@ -84,7 +85,7 @@ namespace QuickLootDD
 				auto formId = handler->LookupFormID(it->second.formId, it->second.plugin);
 				if (formId > 0) {
 					itemChances[formId] = it->second.chance;
-					DEBUG("LoadForms : Chance for {} <{:08X}> in '<{:08X}:{}>' is '{}'", it->first, formId, it->second.formId, it->second.plugin, it->second.chance);
+					DEBUG("LoadForms : Chance for {} <{:08X}> is '{}'", it->first, formId, itemChances[formId]);
                 } else {
 					ERROR("LoadForms : Not found Form <{:08X}> in '{}' for '{}'", it->second.formId, it->second.plugin, it->first);
 				}
@@ -100,6 +101,7 @@ namespace QuickLootDD
 
 	bool InterfaceDeviouslyEnchantedChests::Reset()
 	{
+		TRACE("InterfaceDeviouslyEnchantedChests::Reset");
 		_containerData.clear();
 		_lastInvalidationTime = RE::Calendar::GetSingleton()->GetDaysPassed();
 		isBusy.store(false);
@@ -174,7 +176,7 @@ namespace QuickLootDD
 		resetContainerChance(container);
 
         // Fire DEC
-		DEBUG("onQLDoTaked Fire DEC");
+		LOG("onQLDoTaked Fire DEC");
 		SKSE::ModCallbackEvent dTrapEvent{ "dtraps_TriggerTrap", "", 0, container };
 		SKSE::GetModCallbackEventSource()->SendEvent(&dTrapEvent);
 
@@ -283,6 +285,54 @@ namespace QuickLootDD
 		}
 
 		return true;
+	}
+
+	void InterfaceDeviouslyEnchantedChests::stateRevert(SKSE::SerializationInterface* /*serializationInterface*/)
+	{
+		Reset();
+	}
+
+	void InterfaceDeviouslyEnchantedChests::stateSave(SKSE::SerializationInterface* serializationInterface)
+	{
+		invalidateContainerData(true);
+
+		const std::size_t cntData = _containerData.size();
+		if (!serializationInterface->WriteRecordData(cntData)) {
+			ERROR("Failed to save count of data ({})", cntData);
+			return;
+		}
+		for (auto it = _containerData.cbegin(); it != _containerData.cend(); ++it) {
+			Serialization::ContainerData_v1 data;
+			data.formId = it->first;
+			data.lastUsed = it->second.lastUsed;
+			data.lastTriggered = it->second.lastTriggered;
+			data.chance = it->second.chance;
+
+			if (!serializationInterface->WriteRecordData(data)) {
+				ERROR("Failed to save data for <{:X}>", data.formId);
+			}
+		}
+	}
+
+	void InterfaceDeviouslyEnchantedChests::stateLoad(SKSE::SerializationInterface* serializationInterface)
+	{
+		std::size_t cntData;
+		serializationInterface->ReadRecordData(cntData);
+
+		_containerData.clear();
+
+		Serialization::ContainerData_v1 data;
+
+		for (size_t i = 0; i < cntData; i++) {
+			serializationInterface->ReadRecordData(data);
+            if (!data.formId) {
+				continue;
+			}
+			_containerData[data.formId].lastUsed = data.lastUsed;
+			_containerData[data.formId].lastTriggered = data.lastTriggered;
+			_containerData[data.formId].chance = data.chance;
+			TRACE("Loaded data for <{:X}>: ({}, {}, {})", data.formId, data.lastTriggered, data.lastUsed, data.chance);
+		}
 	}
 
     std::vector<double> InterfaceDeviouslyEnchantedChests::getTakeLootChance(RE::Actor* actor, RE::TESObjectREFR* container, TakenElement* element, std::size_t elementsCount)
@@ -471,12 +521,11 @@ namespace QuickLootDD
 		return _containerData[container->GetFormID()].chance;
 	}
 
-	void InterfaceDeviouslyEnchantedChests::invalidateContainerData()
+	void InterfaceDeviouslyEnchantedChests::invalidateContainerData(bool force)
 	{
-		const auto calendar = RE::Calendar::GetSingleton();
-		auto now = calendar->GetDaysPassed();
+		auto now = RE::Calendar::GetSingleton()->GetDaysPassed();
 
-        if (now < _lastInvalidationTime + 1) {
+        if (!force && !(now > _lastInvalidationTime + 1 || _containerData.size() >= QuickLootDD::Config::containerMaxLimitForInvalidate)) {
 			return;
         }
 
@@ -492,7 +541,7 @@ namespace QuickLootDD
 
 		DEBUG("invalidateContainerData pre:");
 		for (auto it = _containerData.cbegin(); it != _containerData.cend();) {
-			DEBUG("    {:08X}: {}, {}, {}", it->first, it->second.lastTriggered, it->second.lastUsed, it->second.chance);
+			DEBUG("    <{:08X}>: ({}, {}, {})", it->first, it->second.lastTriggered, it->second.lastUsed, it->second.chance);
 			++it;
 		}
 		DEBUG("---------");
@@ -529,7 +578,7 @@ namespace QuickLootDD
 
 		DEBUG("invalidateContainerData post:");
 		for (auto it = _containerData.cbegin(); it != _containerData.cend();) {
-			DEBUG("    {:08X}: {}, {}, {}", it->first, it->second.lastTriggered, it->second.lastUsed, it->second.chance);
+			DEBUG("    <{:08X}>: ({}, {}, {})", it->first, it->second.lastTriggered, it->second.lastUsed, it->second.chance);
 			++it;
 		}
 		DEBUG("---------");

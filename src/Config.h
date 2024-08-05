@@ -31,7 +31,7 @@ namespace QuickLootDD
 		static inline bool resetChanceOnLastItem = false;
 
 		static inline int containerLimit = 100;
-
+		static inline int containerMaxLimitForInvalidate = 100;
         
 		static inline std::vector<std::string> SafeLocations = {};
 
@@ -61,6 +61,8 @@ namespace QuickLootDD
 
 		static inline bool visualiseChance = false;
 		static inline bool QuickLootLogger = false;
+
+		static inline bool useCoSave = true;
 
 		static void readIniConfig();
 

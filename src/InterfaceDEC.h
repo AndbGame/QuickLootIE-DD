@@ -7,7 +7,6 @@ namespace QuickLootDD
     using TakenElement = QuickLoot::Integrations::TakenHandler::Element;
     using SelectElement = QuickLoot::Integrations::SelectHandler::Element;
     using LootMenuElement = QuickLoot::Integrations::LootMenuHandler::Element;
-    using clock = std::chrono::high_resolution_clock;
 
 	class InterfaceDeviouslyEnchantedChests
 	{
@@ -67,7 +66,11 @@ namespace QuickLootDD
 		static bool isAllowedActor(RE::Actor* actor);
 		static bool isAllowedActorLocation(RE::Actor* actor);
 		static bool isContainerAllowed(RE::TESObjectREFR* container);
-        static bool isTriggerAllowed(RE::TESObjectREFR* container);
+		static bool isTriggerAllowed(RE::TESObjectREFR* container);
+
+		static void stateRevert(SKSE::SerializationInterface* serializationInterface);
+		static void stateSave(SKSE::SerializationInterface* serializationInterface);
+		static void stateLoad(SKSE::SerializationInterface* serializationInterface);
 
 	protected:
 		//static inline RE::TESQuest* dtraps_Quest = nullptr;
@@ -94,7 +97,7 @@ namespace QuickLootDD
 		static void decContainerChance(RE::TESObjectREFR* container);
 		static double resetContainerChance(RE::TESObjectREFR* container);
 		static double generateContainerChance(RE::TESObjectREFR* container);
-		static void invalidateContainerData();
+		static void invalidateContainerData(bool force = false);
 
         static double getLocationChance(RE::Actor* actor);
 

@@ -108,4 +108,4 @@ using uint = uint32_t;
 #define WARN(...)   {SKSE::log::warn(__VA_ARGS__);}
 #define ERROR(...)  {SKSE::log::error(__VA_ARGS__);}
 #define DEBUG(...)  {SKSE::log::debug(__VA_ARGS__);}
-#define INFO(...)  {SKSE::log::debug(__VA_ARGS__);}
+#define TRACE(...)  {SKSE::log::trace(__VA_ARGS__);}
