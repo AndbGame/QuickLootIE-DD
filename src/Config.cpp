@@ -62,7 +62,8 @@ namespace QuickLootDD
 				chanceLimit = 1.0;
 			}
 
-			containerTriggerCooldown = iniConfig.get<int>("MAIN.containerTriggerCooldown", 60);
+			globalTriggerCooldown = iniConfig.get<int>("MAIN.containerTriggerCooldown", 60);
+			containerTriggerCooldown = iniConfig.get<int>("MAIN.containerTriggerCooldown", 360);
 
 			increaseChanceMultiplierMin = iniConfig.get<double>("MAIN.increaseChanceMultiplierMin", 1.01);
 			if (increaseChanceMultiplierMin < 1) {
@@ -119,40 +120,72 @@ namespace QuickLootDD
 			AlchemyItemChanceMultiplier = iniConfig.get<double>("MAIN.AlchemyItemChanceMultiplier", 1.0);
 			SoulGemItemChanceMultiplier = iniConfig.get<double>("MAIN.SoulGemItemChanceMultiplier", 1.0);
 
-            
 			visualiseChance = iniConfig.get<bool>("MAIN.visualiseChance", false);
 			QuickLootLogger = iniConfig.get<bool>("MAIN.QuickLootLogger", false);
 			useCoSave = iniConfig.get<bool>("MAIN.useCoSave", true);
 
             /* DEC */
-
 			useDEC = iniConfig.get<bool>("DEC.useDEC", true);
 			useDECContainerList = iniConfig.get<bool>("DEC.useDECContainerList", true);
 
-            /* ITEMS */
-
-            boost::property_tree::ptree items = iniConfig.get_child("ITEMS");
-			std::string::size_type name_start_pos = 5;
-            for (const auto item : items) {
-				if (item.first.compare(0, name_start_pos, "Item_") == 0) {
-					std::string::size_type name_end_pos = item.first.find("_", name_start_pos);
-                    if (name_end_pos != std::string::npos) {
-						std::string itemName = item.first.substr(name_start_pos, name_end_pos - name_start_pos);
-						if (itemName.size() > 0) {
-							std::string key = item.first.substr(name_end_pos);
-							if (key == "_FormId") {
-								rawItemDefinitions[itemName].formId = std::strtol(item.second.get_value<std::string>("").c_str(), NULL, 0);
-							}
-							if (key == "_PluginFile") {
-								rawItemDefinitions[itemName].plugin = item.second.get_value<std::string>("");
-							}
-							if (key == "_ChanceMultiplier") {
-								rawItemDefinitions[itemName].chance = item.second.get_value<double>(1.0);
+			{ /* ITEMS */
+				boost::property_tree::ptree items = iniConfig.get_child("ITEMS_CHANCE_MULTIPLIER");
+				std::string::size_type name_start_pos = 5;
+				for (const auto& item : items) {
+					if (item.first.compare(0, name_start_pos, "Item_") == 0) {
+						std::string::size_type name_end_pos = item.first.find("_", name_start_pos);
+						if (name_end_pos != std::string::npos) {
+							std::string itemName = item.first.substr(name_start_pos, name_end_pos - name_start_pos);
+							if (itemName.size() > 0) {
+								std::string key = item.first.substr(name_end_pos);
+								if (key == "_FormId") {
+									rawItemDefinitions[itemName].formId = std::strtol(item.second.get_value<std::string>("").c_str(), NULL, 0);
+								}
+								if (key == "_PluginFile") {
+									rawItemDefinitions[itemName].plugin = item.second.get_value<std::string>("");
+								}
+								if (key == "_ChanceMultiplier") {
+									rawItemDefinitions[itemName].chance = item.second.get_value<double>(1.0);
+								}
 							}
 						}
-                    }
-                }
-            }
+					}
+				}
+			}
+
+			{ /* BONUS_LOOT */
+				boost::property_tree::ptree items = iniConfig.get_child("BONUS_LOOT");
+				std::string::size_type name_start_pos = 5;
+				for (const auto& item : items) {
+					if (item.first.compare(0, name_start_pos, "Item_") == 0) {
+						std::string::size_type name_end_pos = item.first.find("_", name_start_pos);
+						if (name_end_pos != std::string::npos) {
+							std::string itemName = item.first.substr(name_start_pos, name_end_pos - name_start_pos);
+							if (itemName.size() > 0) {
+								std::string key = item.first.substr(name_end_pos);
+								if (key == "_FormId") {
+									bonusItemDefinition[itemName].formId = std::strtol(item.second.get_value<std::string>("").c_str(), NULL, 0);
+								}
+								if (key == "_PluginFile") {
+									bonusItemDefinition[itemName].plugin = item.second.get_value<std::string>("");
+								}
+								if (key == "_Count") {
+									bonusItemDefinition[itemName].count = item.second.get_value<size_t>(1);
+								}
+								if (key == "_SimpleChance") {
+									bonusItemDefinition[itemName].simpleChance = item.second.get_value<double>(0.0);
+								}
+								if (key == "_ChanceToReplaceRestraint") {
+									bonusItemDefinition[itemName].chanceToReplaceRestraint = item.second.get_value<double>(0.0);
+								}
+								if (key == "_Requirement") { // TODO: not implemented
+									//bonusItemDefinition[itemName].requirement = item.second.get_value<int>(1);
+								}
+							}
+						}
+					}
+				}
+			}
 
 		} catch (std::exception& ex) {
 			WARN("ERROR LOADING ini FILE: {}", ex.what());

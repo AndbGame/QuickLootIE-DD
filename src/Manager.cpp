@@ -24,7 +24,6 @@ namespace QuickLootDD
 	    }
 
 		itemChances.clear();
-
 		for (auto it = QuickLootDD::Config::rawItemDefinitions.cbegin(); it != QuickLootDD::Config::rawItemDefinitions.cend(); ++it) {
 			if (it->second.chance >= 0 && it->second.formId != 0 && it->second.plugin.size() > 0) {
 				auto formId = handler->LookupFormID(it->second.formId, it->second.plugin);
@@ -39,11 +38,31 @@ namespace QuickLootDD
 			}
 		}
 
+		bonusLoot.clear();
+		for (auto it = QuickLootDD::Config::bonusItemDefinition.cbegin(); it != QuickLootDD::Config::bonusItemDefinition.cend(); ++it) {
+			if (it->second.count >= 0 && it->second.formId != 0 && it->second.plugin.size() > 0) {
+				if (it->second.count <= 0 || (it->second.simpleChance <= 0.0 && it->second.chanceToReplaceRestraint <= 0.0)) {
+					TRACE("LoadForms : BonusLoot - skip Form <{:08X}> in '{}' for '{}'", it->second.formId, it->second.plugin, it->first);
+					continue;
+                }
+				auto formId = handler->LookupFormID(it->second.formId, it->second.plugin);
+				if (formId > 0) {
+					BonusItem item = { formId, it->second.count, it->second.simpleChance, it->second.chanceToReplaceRestraint };
+					bonusLoot.push_back(item);
+					DEBUG("LoadForms : BonusLoot {} <{:08X}> count: '{}' ({}, {}) added", it->first, formId, it->second.count, it->second.simpleChance, it->second.chanceToReplaceRestraint);
+				} else {
+					ERROR("LoadForms : BonusLoot - Not found Form <{:08X}> in '{}' for '{}'", it->second.formId, it->second.plugin, it->first);
+				}
+			} else {
+				ERROR("LoadForms : BonusLoot - Incorrect definition <{:08X}> in '{}' for '{}'", it->second.formId, it->second.plugin, it->first);
+			}
+		}
+
 #undef LOAD_FORM
 		return true;
 	}
 
-	void Manager::onQLDoTaked(RE::Actor* actor, TakenElement* elements, std::size_t elementsCount, RE::TESObjectREFR* container)
+	void Manager::onQLDoTake(RE::Actor* actor, RE::TESObjectREFR* container, Element* elements, std::size_t elementsCount)
 	{
 
 		if (!trySetBusy()) {
@@ -121,7 +140,7 @@ namespace QuickLootDD
 		setFree();
 	}
 
-	void Manager::onQLDoSelect(RE::Actor* actor, SelectElement* elements, std::size_t elementsCount, RE::TESObjectREFR* container)
+	void Manager::onQLDoSelect(RE::Actor* actor, RE::TESObjectREFR* container, Element* elements, std::size_t elementsCount)
 	{
 		if (!QuickLootDD::Config::visualiseChance) {
 			return;
@@ -164,16 +183,21 @@ namespace QuickLootDD
 		}
 	}
 
-	void Manager::onQLDoOpened(RE::Actor*, RE::TESObjectREFR*)
+	void Manager::onQLDoOpened(RE::TESObjectREFR*)
 	{
 	}
 
-	void Manager::onQLDoClosed(RE::Actor*, RE::TESObjectREFR*)
+	QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult Manager::onQLDoOpening(RE::TESObjectREFR* /*container*/)
+	{
+		return QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult::kContinue;
+	}
+
+	void Manager::onQLDoClosed()
 	{
 		UI::Close();
 	}
 
-	void Manager::onQLDoInvalidated(RE::Actor*, RE::TESObjectREFR* container, LootMenuElement*, std::size_t elementsCount)
+	void Manager::onQLDoInvalidated(RE::TESObjectREFR* container, Element*, std::size_t elementsCount)
 	{
 		if (!container) {
 			UI::Close();
@@ -189,7 +213,7 @@ namespace QuickLootDD
 		}
 	}
 
-    std::vector<double> Manager::getTakeLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, TakenElement* element, std::size_t elementsCount)
+    std::vector<double> Manager::getTakeLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, Element* element, std::size_t elementsCount)
 	{
 		std::vector<double> chances;
 
@@ -202,7 +226,7 @@ namespace QuickLootDD
 		return chances;
 	}
 
-	std::vector<double> Manager::getSelectLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, SelectElement* element, std::size_t elementsCount, UIInfoData* infoData)
+	std::vector<double> Manager::getSelectLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, Element* element, std::size_t elementsCount, UIInfoData* infoData)
 	{
 		std::vector<double> chances;
 
@@ -342,6 +366,10 @@ namespace QuickLootDD
 	{
 		auto now = RE::Calendar::GetSingleton()->GetDaysPassed();
 
+		if ((now * 24 * 60 * 60) < ((containerList.getLastTriggered() * 24 * 60 * 60) + (QuickLootDD::Config::globalTriggerCooldown))) {
+			//DEBUG("isTriggerAllowed global cooldown");
+			return false;
+		}
 		if ((now * 24 * 60 * 60) < ((contData->lastTriggered * 24 * 60 * 60) + (QuickLootDD::Config::containerTriggerCooldown))) {
 			//DEBUG("isTriggerAllowed container cooldown");
 			return false;

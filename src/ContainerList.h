@@ -24,11 +24,13 @@ namespace QuickLootDD
 		bool getContainerData(RE::TESForm* form, ContainerData* data, bool onlyTry = false);
 		void setContainerChance(RE::TESForm* form, double chance, bool onlyTry = false);
 		void setTriggered(RE::TESForm* form, bool onlyTry = false);
+		float getLastTriggered(bool onlyTry = false);
 
 		void Invalidate(bool force = false);
 
 	protected:
 		std::map<RE::FormID, ContainerData> _containerData = {};
+		static inline float lastTriggered = 0.0f;
 		float _lastInvalidationTime = 0;
 	};
 }

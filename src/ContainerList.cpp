@@ -39,6 +39,9 @@ namespace QuickLootDD
 				ERROR("Failed to save data for <{:X}>", data.formId);
 			}
 		}
+		if (!serializationInterface->WriteRecordData(lastTriggered)) {
+			ERROR("Failed to save lastTriggered data");
+		}
 	}
 	void ContainerList::LoadState(SKSE::SerializationInterface* serializationInterface)
 	{
@@ -60,6 +63,7 @@ namespace QuickLootDD
 			_containerData[data.formId].chance = data.chance;
 			TRACE("Loaded data for <{:08X}>: ({}, {}, {})", data.formId, data.lastTriggered, data.lastUsed, data.chance);
 		}
+		serializationInterface->ReadRecordData(lastTriggered);
 
 		_lastInvalidationTime = RE::Calendar::GetSingleton()->GetDaysPassed();
 	}
@@ -103,9 +107,25 @@ namespace QuickLootDD
 			spinLock();
 		}
 
-		_containerData[form->GetFormID()].lastTriggered = RE::Calendar::GetSingleton()->GetDaysPassed();
+		lastTriggered = RE::Calendar::GetSingleton()->GetDaysPassed();
+		_containerData[form->GetFormID()].lastTriggered = lastTriggered;
 
 		spinUnlock();
+	}
+	float ContainerList::getLastTriggered(bool onlyTry)
+	{
+		if (onlyTry) {
+			if (!trySpinLock()) {
+				return 0.0f;
+			}
+		} else {
+			spinLock();
+		}
+
+		auto ret = lastTriggered;
+
+		spinUnlock();
+		return ret;
 	}
 	void ContainerList::Invalidate(bool force)
 	{

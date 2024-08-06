@@ -6,12 +6,17 @@
 
 namespace QuickLootDD
 {
-    using TakenElement = QuickLoot::Integrations::TakenHandler::Element;
-    using SelectElement = QuickLoot::Integrations::SelectHandler::Element;
-    using LootMenuElement = QuickLoot::Integrations::LootMenuHandler::Element;
-
+    using Element = QuickLoot::Integrations::Element;
     struct UIInfoData;
 	struct UIItemInfoData;
+
+	struct BonusItem
+	{
+		RE::FormID formId;
+		size_t count = 1;
+		double simpleChance = 0;
+		double chanceToReplaceRestraint = 0;
+	};
 
 	class Manager
 	{
@@ -19,11 +24,12 @@ namespace QuickLootDD
 		static bool Init();
 		static bool LoadForms();
 
-		static void onQLDoTaked(RE::Actor* actor, TakenElement* elements, std::size_t elementsCount, RE::TESObjectREFR* container);
-		static void onQLDoSelect(RE::Actor* actor, SelectElement* elements, std::size_t elementsCount, RE::TESObjectREFR* container);
-		static void onQLDoOpened(RE::Actor* actor, RE::TESObjectREFR* container);
-		static void onQLDoInvalidated(RE::Actor* actor, RE::TESObjectREFR* container, LootMenuElement* elements, std::size_t elementsCount);
-		static void onQLDoClosed(RE::Actor* actor, RE::TESObjectREFR* container);
+		static void onQLDoTake(RE::Actor* actor, RE::TESObjectREFR* container, Element* elements, std::size_t elementsCount);
+		static void onQLDoSelect(RE::Actor* actor, RE::TESObjectREFR* container, Element* elements, std::size_t elementsCount);
+		static void onQLDoOpened(RE::TESObjectREFR* container);
+		static QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult onQLDoOpening(RE::TESObjectREFR* container);
+		static void onQLDoInvalidated(RE::TESObjectREFR* container, Element* elements, std::size_t elementsCount);
+		static void onQLDoClosed();
         
 		static void RevertState(SKSE::SerializationInterface* serializationInterface);
 		static void SaveState(SKSE::SerializationInterface* serializationInterface);
@@ -32,6 +38,7 @@ namespace QuickLootDD
 	protected:
 		static inline std::atomic<bool> isBusy = false;
 		static inline std::map<RE::FormID, double> itemChances;
+		static inline std::vector<BonusItem> bonusLoot;
 		static inline ContainerList containerList;
 		struct
 		{
@@ -46,8 +53,8 @@ namespace QuickLootDD
 		static bool isContainerAllowed(RE::TESObjectREFR* container);
 		static bool isTriggerAllowed(RE::TESObjectREFR* container, ContainerData* contData);
 
-		static std::vector<double> getTakeLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, TakenElement* element, std::size_t elementsCount);
-		static std::vector<double> getSelectLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, SelectElement* element, std::size_t elementsCount, UIInfoData* infoData);
+		static std::vector<double> getTakeLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, Element* element, std::size_t elementsCount);
+		static std::vector<double> getSelectLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, Element* element, std::size_t elementsCount, UIInfoData* infoData);
 		static double getItemChance(const double baseChance, RE::TESForm* object, std::size_t elementsCount, UIItemInfoData* itemInfoData = nullptr);
 		static double getLocationChance(RE::Actor* actor);
 
