@@ -37,3 +37,5 @@ namespace QuickLootDD::Utils
 		return ret;
 	}
 }
+
+RE::InventoryChanges::IItemChangeVisitor::~IItemChangeVisitor(){};

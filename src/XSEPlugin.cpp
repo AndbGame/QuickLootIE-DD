@@ -5,6 +5,7 @@
 #include "Config.h"
 #include "UI.h"
 #include "Serialization.h"
+#include "InterfaceDD.h"
 
 void InitializeLog([[maybe_unused]] spdlog::level::level_enum a_level = spdlog::level::trace)
 {
@@ -36,12 +37,17 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 		break;
 	case SKSE::MessagingInterface::kDataLoaded:
 		QuickLootDD::InterfaceDeviouslyEnchantedChests::LoadForms();
+		QuickLootDD::InterfaceDeviousDevices::LoadForms();
 		QuickLootDD::Manager::LoadForms();
 		QuickLootDD::UI::OnDataLoaded();
 		break;
 	case SKSE::MessagingInterface::kPostLoadGame:
 		[[fallthrough]];
 	case SKSE::MessagingInterface::kNewGame:
+		if (QuickLootDD::Config::reloadConfigOnLoadSave) {
+			QuickLootDD::Config::readIniConfig();
+			QuickLootDD::Manager::LoadForms();
+		}
 		break;
 	}
 }
@@ -73,6 +79,8 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	if (QuickLootDD::Config::useCoSave) {
 		QuickLootDD::Serialization::Init();
 	}
+
+	QuickLootDD::Manager::installEventSink();
 
 	return true;
 }

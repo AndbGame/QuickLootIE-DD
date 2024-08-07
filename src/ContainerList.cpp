@@ -97,6 +97,20 @@ namespace QuickLootDD
 
 		spinUnlock();
 	}
+	void ContainerList::updateLastUsed(RE::TESForm* form, bool onlyTry)
+	{
+		if (onlyTry) {
+			if (!trySpinLock()) {
+				return;
+			}
+		} else {
+			spinLock();
+		}
+
+		_containerData[form->GetFormID()].lastUsed = RE::Calendar::GetSingleton()->GetDaysPassed();
+
+		spinUnlock();
+	}
 	void ContainerList::setTriggered(RE::TESForm* form, bool onlyTry)
 	{
 		if (onlyTry) {
@@ -109,6 +123,8 @@ namespace QuickLootDD
 
 		lastTriggered = RE::Calendar::GetSingleton()->GetDaysPassed();
 		_containerData[form->GetFormID()].lastTriggered = lastTriggered;
+		_containerData[form->GetFormID()].chance = 0;
+		_containerData[form->GetFormID()].lastUsed = lastTriggered;
 
 		spinUnlock();
 	}
@@ -137,15 +153,13 @@ namespace QuickLootDD
 			return;
 		}
 
-		auto now_sec = now * 24 * 60 * 60;
-
 		struct SortedData
 		{
 			RE::FormID formID;
 			float time;
 		};
 
-		std::vector<SortedData> sortedVector;
+		std::vector<SortedData> sortedVector{};
 
 		DEBUG("invalidateContainerData pre:");
 		for (auto it = _containerData.cbegin(); it != _containerData.cend();) {
@@ -154,22 +168,16 @@ namespace QuickLootDD
 		}
 		DEBUG("---------");
 
+		auto cooldown_sec = now * 24 * 60 * 60 - QuickLootDD::Config::containerTriggerCooldown;
+
 		std::erase_if(_containerData, [=, &sortedVector](const auto& pair) {
-			bool toRemove = false;
-			if (pair.second.lastTriggered == 0 || now_sec > ((pair.second.lastTriggered * 24 * 60 * 60) + (QuickLootDD::Config::containerTriggerCooldown))) {
-				toRemove = true;
-			}
-			if (toRemove) {
-				if (pair.second.chance == 0 || now_sec > ((pair.second.lastUsed * 24 * 60 * 60) + (QuickLootDD::Config::containerChanceCooldown))) {
-					toRemove = true;
-				} else {
-					toRemove = false;
-				}
-			}
-			if (!toRemove) {
+			if (cooldown_sec > pair.second.lastTriggered * 24 * 60 * 60 ||
+				cooldown_sec > pair.second.lastUsed * 24 * 60 * 60) {
+				return true;
+			} else {
 				sortedVector.push_back({ pair.first, std::max(pair.second.lastTriggered, pair.second.lastUsed) });
-			}
-			return toRemove;
+				return false;
+            }
 		});
 
 		if (_containerData.size() > QuickLootDD::Config::containerLimit) {

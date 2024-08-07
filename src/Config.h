@@ -15,19 +15,23 @@ namespace QuickLootDD
 
 		struct BonusItemDefinition
 		{
-			enum RequirementFlags
+			enum class RequirementFlags : std::uint32_t
 			{
-				ANY = 1 << 0,
-				HAS_RESTRAINT = 1 << 1,
-				HAS_CHASTITY = 1 << 2,
-				HAS_PIERCING = 1 << 3,
+				NONE = 1 << 0,
+				Lockable = 1 << 1,
+				Belt = 1 << 2,
+				Bra = 1 << 3,
+				Plug = 1 << 4,
+				Piercing = 1 << 5,
+				HeavyBondage = 1 << 6,
+				BondageMittens = 1 << 7
 			};
 			RE::FormID formId = 0;
 			std::string plugin = "";
-			size_t count = 1;
-			double simpleChance = 0;
-			double chanceToReplaceRestraint = 0;
-			RequirementFlags requirement = RequirementFlags::ANY;
+			std::int32_t minCount = 1;
+			std::int32_t maxCount = 1;
+			double chance = 0;
+			stl::enumeration<RequirementFlags, std::uint32_t> requirement = RequirementFlags::NONE;
 		};
 		static inline std::map<std::string, BonusItemDefinition> bonusItemDefinition;
 
@@ -81,6 +85,9 @@ namespace QuickLootDD
 		static inline bool QuickLootLogger = false;
 
 		static inline bool useCoSave = true;
+		static inline bool reloadConfigOnLoadSave = false;
+
+        static inline bool RestrictLootMenu = true;
         
 		static inline bool useDECContainerList = true;
 		static inline bool useDEC = true;

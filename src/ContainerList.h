@@ -23,6 +23,7 @@ namespace QuickLootDD
 
 		bool getContainerData(RE::TESForm* form, ContainerData* data, bool onlyTry = false);
 		void setContainerChance(RE::TESForm* form, double chance, bool onlyTry = false);
+		void updateLastUsed(RE::TESForm* form, bool onlyTry = false);
 		void setTriggered(RE::TESForm* form, bool onlyTry = false);
 		float getLastTriggered(bool onlyTry = false);
 

@@ -1,15 +1,42 @@
 #include "Manager.h"
 
-#include "Config.h"
 #include "UI.h"
 #include "InterfaceDEC.h"
 #include "Utils.h"
+#include "InterfaceDD.h"
+
+#undef GetObject
 
 namespace QuickLootDD
 {
+	class OnTESEquipEvent : public RE::BSTEventSink<RE::TESEquipEvent>
+	{
+	public:
+		virtual RE::BSEventNotifyControl ProcessEvent(const RE::TESEquipEvent* a_event,
+			RE::BSTEventSource<RE::TESEquipEvent>* )
+		{
+			if (a_event->actor != nullptr && a_event->actor->IsPlayer()) {
+				Manager::invalidateEquipment();
+			}
+			return RE::BSEventNotifyControl::kContinue;
+		}
+	};
+
 	bool Manager::Init()
 	{
 		return true;
+	}
+
+	void Manager::installEventSink()
+	{
+		DEBUG("Install EventSink pre");
+		auto scriptEventSource = RE::ScriptEventSourceHolder::GetSingleton();
+		if (scriptEventSource) {
+			scriptEventSource->AddEventSink(new OnTESEquipEvent());
+		} else {
+			ERROR("Install EventSink failed");
+		}
+		DEBUG("Install EventSink post");
 	}
 
 	bool Manager::LoadForms()
@@ -40,16 +67,19 @@ namespace QuickLootDD
 
 		bonusLoot.clear();
 		for (auto it = QuickLootDD::Config::bonusItemDefinition.cbegin(); it != QuickLootDD::Config::bonusItemDefinition.cend(); ++it) {
-			if (it->second.count >= 0 && it->second.formId != 0 && it->second.plugin.size() > 0) {
-				if (it->second.count <= 0 || (it->second.simpleChance <= 0.0 && it->second.chanceToReplaceRestraint <= 0.0)) {
+			if (it->second.formId != 0 && it->second.plugin.size() > 0) {
+				if (it->second.maxCount <= 0 || it->second.chance <= 0.0) {
 					TRACE("LoadForms : BonusLoot - skip Form <{:08X}> in '{}' for '{}'", it->second.formId, it->second.plugin, it->first);
 					continue;
                 }
-				auto formId = handler->LookupFormID(it->second.formId, it->second.plugin);
-				if (formId > 0) {
-					BonusItem item = { formId, it->second.count, it->second.simpleChance, it->second.chanceToReplaceRestraint };
-					bonusLoot.push_back(item);
-					DEBUG("LoadForms : BonusLoot {} <{:08X}> count: '{}' ({}, {}) added", it->first, formId, it->second.count, it->second.simpleChance, it->second.chanceToReplaceRestraint);
+				if (const auto object = handler->LookupForm(it->second.formId, it->second.plugin)) {
+					if (const auto boundObj = object->As<RE::TESBoundObject>(); boundObj && boundObj->IsInventoryObject()) {
+						BonusItem item = { boundObj, it->second.minCount, it->second.maxCount, it->second.chance, it->second.requirement };
+						bonusLoot.push_back(item);
+						DEBUG("LoadForms : BonusLoot {} <{:08X}> count: '{}..{}' ({}) registered", it->first, boundObj->GetFormID(), it->second.minCount, it->second.maxCount, it->second.chance);
+					} else {
+						ERROR("LoadForms : BonusLoot - Incorrect Bound Form <{:08X}> in '{}' for '{}'", it->second.formId, it->second.plugin, it->first);
+					}
 				} else {
 					ERROR("LoadForms : BonusLoot - Not found Form <{:08X}> in '{}' for '{}'", it->second.formId, it->second.plugin, it->first);
 				}
@@ -119,15 +149,19 @@ namespace QuickLootDD
 			}
 		}
 
+        
+		//BonusItemQuery query{};
+
 		if (!trigger) {
 			incContainerChance(container, &contData);
 			containerList.Invalidate();
+
 			setFree();
 			return;
 		}
 
 		containerList.setTriggered(container, true);
-		containerList.setContainerChance(container, 0, true);
+		containerList.Invalidate();
 
         if (QuickLootDD::Config::useDEC) {
 			// Fire DEC
@@ -135,7 +169,6 @@ namespace QuickLootDD
 			InterfaceDeviouslyEnchantedChests::TriggerTrap(container);
 		}
 
-		containerList.Invalidate();
 
 		setFree();
 	}
@@ -161,6 +194,11 @@ namespace QuickLootDD
 			return;
 		}
 
+		if (!trySetBusy()) {
+			UI::Close();
+			return;
+		}
+
 		UIInfoData infoData;
 
 		ContainerData contData;
@@ -173,28 +211,80 @@ namespace QuickLootDD
 		if (!isTriggerAllowed(container, &contData)) {
 			infoData.isCooldown = true;
 			UI::ShowDECInfo(infoData);
+			setFree();
 			return;
 		}
 
 		auto chance = getSelectLootChance(actor, container, &contData, elements, elementsCount, &infoData);
-		setFree();
 		if (chance.size() > 0) {
 			UI::ShowDECInfo(infoData);
 		}
+		setFree();
 	}
 
 	void Manager::onQLDoOpened(RE::TESObjectREFR*)
 	{
 	}
 
-	QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult Manager::onQLDoOpening(RE::TESObjectREFR* /*container*/)
+	QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult Manager::onQLDoOpening(RE::TESObjectREFR* container)
 	{
+		auto equipmentInfo = getPlayerEquipmentInfo();
+		if (container->HasContainer()) {
+			if (trySetBusy()) {
+
+				ContainerData contData;
+				if (containerList.getContainerData(container, &contData, true)) {
+					auto now = RE::Calendar::GetSingleton()->GetDaysPassed();
+
+					if ((now * 24 * 60 * 60) > ((contData.lastUsed * 24 * 60 * 60) + (QuickLootDD::Config::containerChanceCooldown))) {
+						containerList.updateLastUsed(container);
+						BonusItemQuery query{};
+						query.DDEquipment = equipmentInfo;
+						auto bonus = getBonusItem(&query);
+
+						auto exist = container->GetInventory([=](const RE::TESBoundObject& a_object) {
+							for (const std::tuple<RE::TESBoundObject*, std::int32_t> item : bonus) {
+								if (a_object.GetFormID() == std::get<0>(item)->GetFormID()) {
+									TRACE("onQLDoOpening GetInventory for <{:08X}>, already in container <{:08X}>", container->GetFormID(), a_object.GetFormID());
+									return true;
+                                }
+							}
+							TRACE("onQLDoOpening GetInventory for <{:08X}>, in container <{:08X}>", container->GetFormID(), a_object.GetFormID());
+							return false;
+						});
+
+						for (const std::tuple<RE::TESBoundObject*, std::int32_t> item : bonus) {
+							if (auto search = exist.find(std::get<0>(item)); search == exist.end()) {
+								TRACE("Spawn BonusItem <{:08X}>, {}", std::get<0>(item)->GetFormID(), std::get<1>(item));
+								container->AddObjectToContainer(std::get<0>(item), nullptr, std::get<1>(item), nullptr);
+                            }
+						}
+					}
+				} else {
+					TRACE("onQLDoOpening getContainerData false <{:08X}>", container->GetFormID());
+				}
+
+				setFree();
+			} else {
+				TRACE("onQLDoOpening is busy");
+            }
+		} else {
+			TRACE("onQLDoOpening not container <{:08X}>", container->GetFormID());
+        }
+		if (QuickLootDD::Config::RestrictLootMenu && (equipmentInfo.bondageMittens || equipmentInfo.heavyBondage)) {
+			return QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult::kStop;
+        }
 		return QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult::kContinue;
 	}
 
 	void Manager::onQLDoClosed()
 	{
 		UI::Close();
+	}
+
+	void Manager::invalidateEquipment()
+	{
+		invalidateEquip.store(true);
 	}
 
 	void Manager::onQLDoInvalidated(RE::TESObjectREFR* container, Element*, std::size_t elementsCount)
@@ -479,12 +569,103 @@ namespace QuickLootDD
 		containerList.setContainerChance(container, contData->chance);
 	}
 
+	std::vector<std::tuple<RE::TESBoundObject*, std::int32_t>> Manager::getBonusItem(BonusItemQuery* query)
+	{
+		std::vector<std::tuple<RE::TESBoundObject*, std::int32_t>> items;
+
+		std::map<RE::TESBoundObject*, bool> itemsMap;
+		for (const BonusItem item : bonusLoot) {
+			bool skip = true;
+
+            if (item.requirement.underlying() == 0) {
+				skip = false;
+			} else {
+				if (skip && item.requirement.any(BonusItemFlag::Lockable) && query->DDEquipment.lockable) {
+					skip = false;
+				}
+				if (skip && item.requirement.any(BonusItemFlag::Belt) && query->DDEquipment.belt) {
+					skip = false;
+				}
+				if (skip && item.requirement.any(BonusItemFlag::Bra) && query->DDEquipment.bra) {
+					skip = false;
+				}
+				if (skip && item.requirement.any(BonusItemFlag::Plug) && query->DDEquipment.plug) {
+					skip = false;
+				}
+				if (skip && item.requirement.any(BonusItemFlag::Piercing) && query->DDEquipment.piercing) {
+					skip = false;
+				}
+				if (skip && item.requirement.any(BonusItemFlag::HeavyBondage) && query->DDEquipment.heavyBondage) {
+					skip = false;
+				}
+				if (skip && item.requirement.any(BonusItemFlag::BondageMittens) && query->DDEquipment.bondageMittens) {
+					skip = false;
+				}
+			}
+			
+			if (!skip && item.chance > 0 && Utils::randomChance(item.chance)) {
+				if (auto search = itemsMap.find(item.object); search == itemsMap.end()) {
+					itemsMap[item.object] = true;
+					TRACE("getBonusItem <{:08X}>", item.object->GetFormID());
+					items.push_back({ item.object, Utils::randomValue(item.minCount, item.maxCount) });
+				}
+			}
+        }
+		return items;
+	}
+
+	PlayerEquipmentInfo Manager::getPlayerEquipmentInfo()
+	{
+        if (invalidateEquip.load() == true) {
+			invalidateEquip.store(false);
+			PlayerEquipmentInfo info;
+            // TODO: Optimization?
+			auto visitor = Utils::WornVisitor([=, &info](RE::InventoryEntryData* a_entry) {
+				auto loc_object = a_entry->GetObject();
+				RE::TESObjectARMO* loc_armor = nullptr;
+				if (loc_object != nullptr && loc_object->IsArmor()) {
+					loc_armor = static_cast<RE::TESObjectARMO*>(loc_object);
+					if (loc_armor != nullptr) {
+						if (!info.lockable) {
+							info.lockable = loc_armor->HasKeyword(InterfaceDeviousDevices::zad_Lockable);
+						}
+						if (((int)loc_armor->GetSlotMask() & Utils::GetMaskForSlot(49)) && !info.belt) {
+							info.belt = loc_armor->HasKeyword(InterfaceDeviousDevices::zad_DeviousBelt);
+						}
+						if (((int)loc_armor->GetSlotMask() & Utils::GetMaskForSlot(56)) && !info.bra) {
+							info.bra = loc_armor->HasKeyword(InterfaceDeviousDevices::zad_DeviousBra);
+						}
+						if ( (((int)loc_armor->GetSlotMask() & Utils::GetMaskForSlot(50)) || ((int)loc_armor->GetSlotMask() & Utils::GetMaskForSlot(51))) && !info.piercing) {
+							info.piercing = loc_armor->HasKeyword(InterfaceDeviousDevices::zad_DeviousPiercingsNipple) || loc_armor->HasKeyword(InterfaceDeviousDevices::zad_DeviousPiercingsVaginal);
+						}
+						if ( (((int)loc_armor->GetSlotMask() & Utils::GetMaskForSlot(57)) || ((int)loc_armor->GetSlotMask() & Utils::GetMaskForSlot(48))) && !info.plug) {
+							info.plug = loc_armor->HasKeyword(InterfaceDeviousDevices::zad_DeviousPlug) || loc_armor->HasKeyword(InterfaceDeviousDevices::zad_DeviousPlugAnal) || loc_armor->HasKeyword(InterfaceDeviousDevices::zad_DeviousPlugVaginal);
+						}
+						if (((int)loc_armor->GetSlotMask() & Utils::GetMaskForSlot(33)) && !info.bondageMittens) {
+							info.bondageMittens = loc_armor->HasKeyword(InterfaceDeviousDevices::zad_DeviousBondageMittens);
+						}
+						if ((((int)loc_armor->GetSlotMask() & Utils::GetMaskForSlot(32)) || ((int)loc_armor->GetSlotMask() & Utils::GetMaskForSlot(46))) && !info.heavyBondage) {
+							info.heavyBondage = loc_armor->HasKeyword(InterfaceDeviousDevices::zad_DeviousHeavyBondage);
+						}
+						TRACE("Manager::getPlayerEquipmentInfo ({},{},{},{},{},{},{})", info.lockable, info.belt, info.bra, info.piercing, info.plug, info.bondageMittens, info.heavyBondage);
+					}
+				}
+				return RE::BSContainer::ForEachResult::kContinue;
+			});
+			RE::PlayerCharacter::GetSingleton()->GetInventoryChanges()->VisitWornItems(visitor);
+			playerEquipmentInfo = info;
+			TRACE("Manager::getPlayerEquipmentInfo ({},{},{},{},{},{},{})", info.lockable, info.belt, info.bra, info.piercing, info.plug, info.bondageMittens, info.heavyBondage);
+        }
+		return playerEquipmentInfo;
+	}
+
 	void Manager::RevertState(SKSE::SerializationInterface* serializationInterface)
 	{
 		TRACE("Manager::RevertState");
 		containerList.RevertState(serializationInterface);
 		InterfaceDeviouslyEnchantedChests::RevertState(serializationInterface);
 		isBusy.store(false);
+		invalidateEquip.store(true);
 	}
 
 	void Manager::SaveState(SKSE::SerializationInterface* serializationInterface)
