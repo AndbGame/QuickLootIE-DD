@@ -149,9 +149,6 @@ namespace QuickLootDD
 			}
 		}
 
-        
-		//BonusItemQuery query{};
-
 		if (!trigger) {
 			incContainerChance(container, &contData);
 			containerList.Invalidate();

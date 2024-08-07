@@ -93,6 +93,7 @@ namespace QuickLootDD
 		static inline bool useDEC = true;
 
 		static void readIniConfig();
+		static void readIniConfig(std::string filename);
 
     protected:
 	};
