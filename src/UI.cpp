@@ -1,6 +1,10 @@
 #include "UI.h"
 
+#include "Config.h"
+
 #include <d3d11.h>
+#include <DirectXMath.h>
+#include <DirectXTex.h>
 
 #include <imgui_impl_dx11.h>
 #include <imgui_impl_win32.h>
@@ -11,29 +15,101 @@
 
 namespace QuickLootDD
 {
+
+	bool UI::LoadTextureFromFile()
+	{
+		bool result = false;
+		const std::filesystem::path overlayPath(R"(Data\Interface\QuickLootIEDD\)" + QuickLootDD::Config::visualiseOverlayFile);
+        if (!std::filesystem::exists(overlayPath)) {
+			ERROR("Overlay file not found")
+			return false;
+        }
+
+		auto image = std::make_shared<DirectX::ScratchImage>();
+
+		HRESULT hr = DirectX::LoadFromWICFile(overlayPath.c_str(), DirectX::WIC_FLAGS_IGNORE_SRGB, nullptr, *image);
+		if (SUCCEEDED(hr)) {
+			if (auto renderer = RE::BSGraphics::Renderer::GetSingleton()) {
+				static auto screenSize = RE::BSGraphics::Renderer::GetScreenSize();
+				if (screenSize.height != image->GetMetadata().height && screenSize.width != image->GetMetadata().width) {
+					DirectX::ScratchImage tmpImage;
+					DirectX::Resize(*image->GetImage(0, 0, 0), screenSize.width, screenSize.height, DirectX::TEX_FILTER_CUBIC, tmpImage);
+
+					image.reset();  // is this needed
+					image = std::make_shared<DirectX::ScratchImage>(std::move(tmpImage));
+				}
+
+				Microsoft::WRL::ComPtr<ID3D11Resource> pTexture{};
+				hr = DirectX::CreateTexture((ID3D11Device*)device, image->GetImages(), 1, image->GetMetadata(), &pTexture);
+
+				if (SUCCEEDED(hr)) {
+					REX::W32::D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+					srvDesc.format = (REX::W32::DXGI_FORMAT)image->GetMetadata().format;
+					srvDesc.viewDimension = (REX::W32::D3D11_SRV_DIMENSION)D3D11_SRV_DIMENSION_TEXTURE2D;
+					srvDesc.texture2D.mipLevels = 1;
+					srvDesc.texture2D.mostDetailedMip = 0;
+
+					hr = device->CreateShaderResourceView((REX::W32::ID3D11Resource*)(pTexture.Get()), &srvDesc, &srView);
+					result = SUCCEEDED(hr);
+				}
+
+				x = static_cast<float>(image->GetMetadata().width);
+				y = static_cast<float>(image->GetMetadata().height);
+
+				pTexture.Reset();
+			}
+		}
+		return result;
+	}
+
 	void UI::renderUI()
 	{
         auto lootInfo = currentLootInfo.load();
-		SetWindowDimensions(0, 0, 0, 0, WindowAlignment::kTopRight);
-		constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings;
+		ImGui::Begin("Main", nullptr, ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
 
-		if (ImGui::Begin("QuickLootIEDD Debug", nullptr, windowFlags)) {
-            if (lootInfo.isCooldown) {
-				ImGui::Text("Container in Cooldown");
-            } else {
-				ImGui::Text("Container Chance: %f", lootInfo.containerChance);
-				ImGui::Text("Location Chance: %f", lootInfo.locationChance);
+		double totalChance = 0;
+		double itemChance = 0;
+		for (std::size_t cnt = 0; cnt < lootInfo.itemCount; ++cnt) {
+			totalChance = std::max(totalChance, lootInfo.itemChance[cnt].totalChance);
+			itemChance = std::max(itemChance, lootInfo.itemChance[cnt].itemChance);
+		}
 
-				ImGui::SeparatorText("Item Info: ");
-				for (std::size_t cnt = 0; cnt < lootInfo.itemCount; ++cnt) {
-					ImGui::Text("Item Chance: %f", lootInfo.itemChance[cnt].itemChance);
-					ImGui::Text("Total Chance: %f", lootInfo.itemChance[cnt].totalChance);
-					if ((cnt + 1) < lootInfo.itemCount) {
-						ImGui::Text("");
-					}
+		if (!lootInfo.isCooldown && totalChance > 0 && lootInfo.limitChance > 0 && srView.Get()) {
+			const auto drawList = ImGui::GetBackgroundDrawList();
+
+			auto& io = ImGui::GetIO();
+			constexpr auto topLeft = ImVec2(0.0f, 0.0f);
+			const auto static bottomRight = ImVec2(io.DisplaySize.x, io.DisplaySize.y);
+
+			double intensity = lootInfo.visualiseMinIntensity + (lootInfo.visualiseMaxIntensity - lootInfo.visualiseMinIntensity) * (totalChance / lootInfo.limitChance);
+			double maxAlpha = (lootInfo.visualiseColorAmax - lootInfo.visualiseColorAmin) * (totalChance / lootInfo.limitChance);
+
+            if (ResetOverlay.load()) {
+				ResetOverlay.store(false);
+				overlayTimer = 0;
+				timerTicks = ImGui::GetTime();
+			} else {
+				overlayTimer = ImGui::GetTime() - timerTicks;
+			}
+
+			float alpha = lootInfo.visualiseColorAmin + (float)((sin((overlayTimer * intensity)) / 2 + 0.5f) * maxAlpha);
+
+			drawList->AddImage(srView.Get(), topLeft, bottomRight, ImVec2(0, 0), ImVec2(1, 1), static_cast<ImU32>(ImColor(lootInfo.visualiseColorR, lootInfo.visualiseColorG, lootInfo.visualiseColorB, alpha)));
+        }
+
+        if (lootInfo.verbose) {
+			SetWindowDimensions(0, 0, 0, 0, WindowAlignment::kBottomCenter);
+			constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration;
+			if (ImGui::Begin("QuickLootIEDD Debug", nullptr, windowFlags)) {
+				if (lootInfo.isCooldown) {
+					ImGui::Text("Container in Cooldown");
+				} else {
+					ImGui::Text("%f = %f * %f * %f ", totalChance,  lootInfo.containerChance, lootInfo.locationChance, itemChance);
 				}
+				ImGui::End();
 			}
 		}
+
 		ImGui::End();
 
 	}
@@ -234,6 +310,9 @@ namespace QuickLootDD
 		if (!WndProcHook::func) {
 			ERROR("SetWindowLongPtrA failed!");
 		}
+        if (!LoadTextureFromFile()) {
+			ERROR("LoadTextureFromFile failed!");
+        }
 	}
 
 	bool UI::Install()
@@ -263,6 +342,7 @@ namespace QuickLootDD
 	{
 		currentLootInfo.store(data);
 		ShowLootInfo.store(true);
+		ResetOverlay.store(true);
 	}
 
 	void UI::renderFrame()

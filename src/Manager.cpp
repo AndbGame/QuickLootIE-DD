@@ -15,7 +15,7 @@ namespace QuickLootDD
 		virtual RE::BSEventNotifyControl ProcessEvent(const RE::TESEquipEvent* a_event,
 			RE::BSTEventSource<RE::TESEquipEvent>* )
 		{
-			if (a_event->actor != nullptr && a_event->actor->IsPlayer()) {
+			if (a_event->actor != nullptr && a_event->actor.get() == RE::PlayerCharacter::GetSingleton()) {
 				Manager::invalidateEquipment();
 			}
 			return RE::BSEventNotifyControl::kContinue;
@@ -199,6 +199,7 @@ namespace QuickLootDD
 		UIInfoData infoData;
 
 		ContainerData contData;
+		infoData.verbose = QuickLootDD::Config::visualiseChanceVerbose;
 
 		if (!containerList.getContainerData(container, &contData, true)) {
 			setFree();
@@ -212,8 +213,18 @@ namespace QuickLootDD
 			return;
 		}
 
+        infoData.limitChance = QuickLootDD::Config::chanceLimit;
+		infoData.visualiseMinIntensity = QuickLootDD::Config::visualiseMinIntensity;
+		infoData.visualiseMaxIntensity = QuickLootDD::Config::visualiseMaxIntensity;
+		infoData.visualiseColorR = QuickLootDD::Config::visualiseColorR;
+		infoData.visualiseColorG = QuickLootDD::Config::visualiseColorG;
+		infoData.visualiseColorB = QuickLootDD::Config::visualiseColorB;
+		infoData.visualiseColorAmin = QuickLootDD::Config::visualiseColorAmin;
+		infoData.visualiseColorAmax = QuickLootDD::Config::visualiseColorAmax;
+
 		auto chance = getSelectLootChance(actor, container, &contData, elements, elementsCount, &infoData);
 		if (chance.size() > 0) {
+			RE::ImageSpaceManager::GetSingleton();
 			UI::ShowDECInfo(infoData);
 		}
 		setFree();
@@ -225,52 +236,51 @@ namespace QuickLootDD
 
 	QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult Manager::onQLDoOpening(RE::TESObjectREFR* container)
 	{
-		auto equipmentInfo = getPlayerEquipmentInfo();
-		if (container->HasContainer()) {
-			if (trySetBusy()) {
-
-				ContainerData contData;
-				if (containerList.getContainerData(container, &contData, true)) {
-					auto now = RE::Calendar::GetSingleton()->GetDaysPassed();
-
-					if ((now * 24 * 60 * 60) > ((contData.lastUsed * 24 * 60 * 60) + (QuickLootDD::Config::containerChanceCooldown))) {
-						containerList.updateLastUsed(container);
-						BonusItemQuery query{};
-						query.DDEquipment = equipmentInfo;
-						auto bonus = getBonusItem(&query);
-
-						auto exist = container->GetInventory([=](const RE::TESBoundObject& a_object) {
-							for (const std::tuple<RE::TESBoundObject*, std::int32_t> item : bonus) {
-								if (a_object.GetFormID() == std::get<0>(item)->GetFormID()) {
-									TRACE("onQLDoOpening GetInventory for <{:08X}>, already in container <{:08X}>", container->GetFormID(), a_object.GetFormID());
-									return true;
-                                }
-							}
-							TRACE("onQLDoOpening GetInventory for <{:08X}>, in container <{:08X}>", container->GetFormID(), a_object.GetFormID());
-							return false;
-						});
-
-						for (const std::tuple<RE::TESBoundObject*, std::int32_t> item : bonus) {
-							if (auto search = exist.find(std::get<0>(item)); search == exist.end()) {
-								TRACE("Spawn BonusItem <{:08X}>, {}", std::get<0>(item)->GetFormID(), std::get<1>(item));
-								container->AddObjectToContainer(std::get<0>(item), nullptr, std::get<1>(item), nullptr);
-                            }
-						}
-					}
-				} else {
-					TRACE("onQLDoOpening getContainerData false <{:08X}>", container->GetFormID());
-				}
-
+		if (trySetBusy()) {
+		    auto equipmentInfo = getPlayerEquipmentInfo();
+			if (QuickLootDD::Config::RestrictLootMenu && (equipmentInfo.bondageMittens || equipmentInfo.heavyBondage)) {
 				setFree();
-			} else {
-				TRACE("onQLDoOpening is busy");
-            }
+			    return QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult::kStop;
+		    }
+
+		    if (container->HasContainer()) {
+			    ContainerData contData;
+			    if (containerList.getContainerData(container, &contData, true)) {
+				    auto now = RE::Calendar::GetSingleton()->GetDaysPassed();
+
+				    if ((now * 24 * 60 * 60) > ((contData.lastUsed * 24 * 60 * 60) + (QuickLootDD::Config::containerChanceCooldown))) {
+					    containerList.updateLastUsed(container);
+					    BonusItemQuery query{};
+					    query.DDEquipment = equipmentInfo;
+					    auto bonus = getBonusItem(&query);
+
+					    auto exist = container->GetInventory([=](const RE::TESBoundObject& a_object) {
+						    for (const std::tuple<RE::TESBoundObject*, std::int32_t> item : bonus) {
+							    if (a_object.GetFormID() == std::get<0>(item)->GetFormID()) {
+								    TRACE("onQLDoOpening GetInventory for <{:08X}>, already in container <{:08X}>", container->GetFormID(), a_object.GetFormID());
+								    return true;
+                                }
+						    }
+						    return false;
+					    });
+
+					    for (const std::tuple<RE::TESBoundObject*, std::int32_t> item : bonus) {
+						    if (auto search = exist.find(std::get<0>(item)); search == exist.end()) {
+							    TRACE("Spawn BonusItem <{:08X}>, {}", std::get<0>(item)->GetFormID(), std::get<1>(item));
+							    container->AddObjectToContainer(std::get<0>(item), nullptr, std::get<1>(item), nullptr);
+                            }
+					    }
+				    }
+			    } else {
+				    TRACE("onQLDoOpening getContainerData false <{:08X}>", container->GetFormID());
+			    }
+		    } else {
+			    TRACE("onQLDoOpening not container <{:08X}>", container->GetFormID());
+			}
+			setFree();
 		} else {
-			TRACE("onQLDoOpening not container <{:08X}>", container->GetFormID());
-        }
-		if (QuickLootDD::Config::RestrictLootMenu && (equipmentInfo.bondageMittens || equipmentInfo.heavyBondage)) {
-			return QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult::kStop;
-        }
+			TRACE("onQLDoOpening is busy");
+		}
 		return QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult::kContinue;
 	}
 
@@ -339,12 +349,13 @@ namespace QuickLootDD
 		double itemChance = 1.0;
 
 		if (!QuickLootDD::Config::useItemChanceMultiplier) {
+			auto totalChance = (baseChance < QuickLootDD::Config::chanceLimit) ? baseChance : QuickLootDD::Config::chanceLimit;
 			if (itemInfoData != nullptr) {
 				itemInfoData->count = 1;
 				itemInfoData->itemChance = 1.0;
-				itemInfoData->totalChance = baseChance;
+				itemInfoData->totalChance = totalChance;
 			}
-			return baseChance;
+			return totalChance;
 		}
 
 		if (auto search = itemChances.find(object->GetFormID()); search != itemChances.end()) {
@@ -407,7 +418,7 @@ namespace QuickLootDD
 			if (itemInfoData != nullptr) {
 				itemInfoData->totalChance = 1.0;
 			}
-			return 1.0;
+			return QuickLootDD::Config::chanceLimit;
 		}
 
 		if (QuickLootDD::Config::useCountOfItemsChanceMultiplier) {
@@ -415,6 +426,9 @@ namespace QuickLootDD
 				return 0.0;
 			}
 			itemChance = 1 - std::pow((1 - itemChance), elementsCount);
+            if (itemChance > QuickLootDD::Config::chanceLimit) {
+				itemChance = QuickLootDD::Config::chanceLimit;
+            }
 		}
 		if (itemInfoData != nullptr) {
 			itemInfoData->totalChance = itemChance;
@@ -454,11 +468,11 @@ namespace QuickLootDD
 		auto now = RE::Calendar::GetSingleton()->GetDaysPassed();
 
 		if ((now * 24 * 60 * 60) < ((containerList.getLastTriggered() * 24 * 60 * 60) + (QuickLootDD::Config::globalTriggerCooldown))) {
-			//DEBUG("isTriggerAllowed global cooldown");
+			//TRACE("isTriggerAllowed global cooldown");
 			return false;
 		}
 		if ((now * 24 * 60 * 60) < ((contData->lastTriggered * 24 * 60 * 60) + (QuickLootDD::Config::containerTriggerCooldown))) {
-			//DEBUG("isTriggerAllowed container cooldown");
+			//TRACE("isTriggerAllowed container cooldown");
 			return false;
 		}
 
@@ -644,14 +658,13 @@ namespace QuickLootDD
 						if ((((int)loc_armor->GetSlotMask() & Utils::GetMaskForSlot(32)) || ((int)loc_armor->GetSlotMask() & Utils::GetMaskForSlot(46))) && !info.heavyBondage) {
 							info.heavyBondage = loc_armor->HasKeyword(InterfaceDeviousDevices::zad_DeviousHeavyBondage);
 						}
-						TRACE("Manager::getPlayerEquipmentInfo ({},{},{},{},{},{},{})", info.lockable, info.belt, info.bra, info.piercing, info.plug, info.bondageMittens, info.heavyBondage);
 					}
 				}
 				return RE::BSContainer::ForEachResult::kContinue;
 			});
 			RE::PlayerCharacter::GetSingleton()->GetInventoryChanges()->VisitWornItems(visitor);
 			playerEquipmentInfo = info;
-			TRACE("Manager::getPlayerEquipmentInfo ({},{},{},{},{},{},{})", info.lockable, info.belt, info.bra, info.piercing, info.plug, info.bondageMittens, info.heavyBondage);
+			DEBUG("Manager::getPlayerEquipmentInfo invalidated ({},{},{},{},{},{},{})", info.lockable, info.belt, info.bra, info.piercing, info.plug, info.bondageMittens, info.heavyBondage);
         }
 		return playerEquipmentInfo;
 	}

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 project(
 	QuickLootIEDD
-	VERSION 0.2.0
+	VERSION 0.3.0
 	LANGUAGES CXX
 )
 
@@ -30,6 +30,7 @@ include(XSEPlugin)
 find_package(magic_enum CONFIG REQUIRED)
 find_package(xbyak CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(directxtex CONFIG REQUIRED)
 find_package(Boost REQUIRED COMPONENTS 
 	property_tree
 	algorithm
@@ -50,6 +51,7 @@ target_link_libraries(
 	magic_enum::magic_enum
 	xbyak::xbyak
 	nlohmann_json::nlohmann_json
+	Microsoft::DirectXTex
 	Boost::property_tree
 	Boost::algorithm
 	imgui::imgui

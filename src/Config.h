@@ -82,7 +82,17 @@ namespace QuickLootDD
 		static inline double SoulGemItemChanceMultiplier = 1.0;
 
 		static inline bool visualiseChance = false;
+		static inline bool visualiseChanceVerbose = false;
 		static inline bool QuickLootLogger = false;
+
+        static inline std::string visualiseOverlayFile = {};
+        static inline float visualiseMinIntensity = 0.0f;
+		static inline float visualiseMaxIntensity = 1.0f;
+		static inline float visualiseColorR = 255.0f;
+		static inline float visualiseColorG = 0.0f;
+		static inline float visualiseColorB = 0.0f;
+		static inline float visualiseColorAmin = 0.0f;
+		static inline float visualiseColorAmax = 1.0f;
 
 		static inline bool useCoSave = true;
 		static inline bool reloadConfigOnLoadSave = false;

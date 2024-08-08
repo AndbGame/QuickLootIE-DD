@@ -171,7 +171,7 @@ namespace QuickLootDD
 		auto cooldown_sec = now * 24 * 60 * 60 - QuickLootDD::Config::containerTriggerCooldown;
 
 		std::erase_if(_containerData, [=, &sortedVector](const auto& pair) {
-			if (cooldown_sec > pair.second.lastTriggered * 24 * 60 * 60 ||
+			if (cooldown_sec > pair.second.lastTriggered * 24 * 60 * 60 &&
 				cooldown_sec > pair.second.lastUsed * 24 * 60 * 60) {
 				return true;
 			} else {

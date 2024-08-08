@@ -174,10 +174,50 @@ namespace QuickLootDD
 				LOAD_PROPERTY_TREE(AlchemyItemChanceMultiplier, double, "MAIN.AlchemyItemChanceMultiplier");
 				LOAD_PROPERTY_TREE(SoulGemItemChanceMultiplier, double, "MAIN.SoulGemItemChanceMultiplier");
 
-				LOAD_PROPERTY_TREE(visualiseChance, bool, "MAIN.visualiseChance");
 				LOAD_PROPERTY_TREE(QuickLootLogger, bool, "MAIN.QuickLootLogger");
 				LOAD_PROPERTY_TREE(useCoSave, bool, "MAIN.useCoSave");
 				LOAD_PROPERTY_TREE(reloadConfigOnLoadSave, bool, "MAIN.reloadConfigOnLoadSave");
+
+				LOAD_PROPERTY_TREE(visualiseChance, bool, "MAIN.visualiseChance");
+				LOAD_PROPERTY_TREE(visualiseOverlayFile, std::string, "MAIN.visualiseOverlayFile");
+				LOAD_PROPERTY_TREE(visualiseChanceVerbose, bool, "MAIN.visualiseChanceVerbose");
+				LOAD_PROPERTY_TREE(visualiseMinIntensity, float, "MAIN.visualiseMinIntensity");
+				if (visualiseMinIntensity < 0) {
+					WARN("readIniConfig: incorrect MAIN.visualiseMinIntensity, adjusted to `1` in {}", filename);
+					visualiseMinIntensity = 1;
+				}
+
+				LOAD_PROPERTY_TREE(visualiseMaxIntensity, float, "MAIN.visualiseMaxIntensity");
+				if (visualiseMaxIntensity < visualiseMinIntensity) {
+					visualiseMaxIntensity = visualiseMinIntensity;
+					WARN("readIniConfig: incorrect MAIN.visualiseMaxIntensity, adjusted to {} in {}", visualiseMinIntensity, filename);
+				}
+
+				LOAD_PROPERTY_TREE(visualiseColorR, float, "MAIN.visualiseColorR");
+				if (visualiseColorR < 0 || visualiseColorR > 255) {
+					visualiseColorR = 255;
+					WARN("readIniConfig: incorrect MAIN.visualiseColorR, adjusted to {} in {}", visualiseColorR, filename);
+				}
+				LOAD_PROPERTY_TREE(visualiseColorG, float, "MAIN.visualiseColorG");
+				if (visualiseColorG < 0 || visualiseColorG > 255) {
+					visualiseColorG = 255;
+					WARN("readIniConfig: incorrect MAIN.visualiseColorR, adjusted to {} in {}", visualiseColorG, filename);
+				}
+				LOAD_PROPERTY_TREE(visualiseColorB, float, "MAIN.visualiseColorB");
+				if (visualiseColorB < 0 || visualiseColorB > 255) {
+					visualiseColorB = 255;
+					WARN("readIniConfig: incorrect MAIN.visualiseColorR, adjusted to {} in {}", visualiseColorB, filename);
+				}
+				LOAD_PROPERTY_TREE(visualiseColorAmin, float, "MAIN.visualiseColorAmin");
+				if (visualiseColorAmin < 0 || visualiseColorAmin > 1.0) {
+					visualiseColorAmin = 0.0f;
+					WARN("readIniConfig: incorrect MAIN.visualiseColorA, adjusted to {} in {}", visualiseColorAmin, filename);
+				}
+				LOAD_PROPERTY_TREE(visualiseColorAmax, float, "MAIN.visualiseColorA");
+				if (visualiseColorAmax < visualiseColorAmin || visualiseColorAmax > 1.0) {
+					visualiseColorAmax = 1.0f;
+					WARN("readIniConfig: incorrect MAIN.visualiseColorA, adjusted to {} in {}", visualiseColorAmax, filename);
+				}
 			} catch (std::exception& ex) {
 				ERROR("ERROR in [MAIN] section in ini file: {} - {}", filename, ex.what());
 			}

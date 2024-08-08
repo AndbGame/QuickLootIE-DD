@@ -9,7 +9,6 @@ namespace QuickLootDD::Utils
 		std::mt19937 gen(rd());
 		std::uniform_real_distribution<double> distr(min, max);
 		auto rnd = distr(gen);
-		DEBUG("randomChance chance:{}; value:{}", chance, rnd);
 		return rnd < chance;
 	}
 	

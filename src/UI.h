@@ -3,6 +3,8 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 
+#include <wrl/client.h>
+
 #include "InterfaceDEC.h"
 
 namespace QuickLootDD
@@ -19,8 +21,17 @@ namespace QuickLootDD
 		bool isCooldown = false;
 		double containerChance = 0.0;
 		double locationChance = 0.0;
+		double limitChance = 0.0;
+		float visualiseMinIntensity = 0.0f;
+		float visualiseMaxIntensity = 0.0f;
+		float visualiseColorR = 0.0f;
+		float visualiseColorG = 0.0f;
+		float visualiseColorB = 0.0f;
+		float visualiseColorAmin = 0.0f;
+		float visualiseColorAmax = 0.0f;
 		UIItemInfoData itemChance[UIItemInfoDataLength];
 		std::size_t itemCount = 0;
+		bool verbose = false;
 	};
 
 	class UI
@@ -86,14 +97,23 @@ namespace QuickLootDD
 
 		static bool isNeedRenderFrame();
 		static void SetWindowDimensions(float a_offsetX = 0.f, float a_offsetY = 0.f, float a_sizeX = -1.f, float a_sizeY = -1.f, WindowAlignment a_alignment = WindowAlignment::kTopLeft, ImVec2 a_sizeMin = ImVec2(0, 0), ImVec2 a_sizeMax = ImVec2(0, 0), ImGuiCond_ a_cond = ImGuiCond_FirstUseEver);
+
+        static bool LoadTextureFromFile();
         
 
 	private:
 		UI() = delete;
 
 		static inline std::atomic<bool> ShowUI = false;
+		static inline std::atomic<bool> ResetOverlay = false;
+		static inline double overlayTimer = 0;
+		static inline double timerTicks = 0;
 		static inline REX::W32::ID3D11Device* device = nullptr;
 		static inline REX::W32::ID3D11DeviceContext* context = nullptr;
+
+		static inline Microsoft::WRL::ComPtr<REX::W32::ID3D11ShaderResourceView> srView{ nullptr };
+		static inline float x;
+		static inline float y;
 
 	public:
 

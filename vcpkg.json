@@ -6,6 +6,7 @@
   "dependencies": [
     "fmt",
     "directxtk",
+    "directxtex",
     "rapidcsv",
     "spdlog",
     "xbyak",
