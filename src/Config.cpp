@@ -213,7 +213,7 @@ namespace QuickLootDD
 					visualiseColorAmin = 0.0f;
 					WARN("readIniConfig: incorrect MAIN.visualiseColorA, adjusted to {} in {}", visualiseColorAmin, filename);
 				}
-				LOAD_PROPERTY_TREE(visualiseColorAmax, float, "MAIN.visualiseColorA");
+				LOAD_PROPERTY_TREE(visualiseColorAmax, float, "MAIN.visualiseColorAmax");
 				if (visualiseColorAmax < visualiseColorAmin || visualiseColorAmax > 1.0) {
 					visualiseColorAmax = 1.0f;
 					WARN("readIniConfig: incorrect MAIN.visualiseColorA, adjusted to {} in {}", visualiseColorAmax, filename);

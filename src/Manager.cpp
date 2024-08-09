@@ -243,7 +243,7 @@ namespace QuickLootDD
 			    return QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult::kStop;
 		    }
 
-		    if (container->HasContainer()) {
+		    if (container->HasContainer() && isAllowedActorLocation(RE::PlayerCharacter::GetSingleton()) && isContainerAllowed(container)) {
 			    ContainerData contData;
 			    if (containerList.getContainerData(container, &contData, true)) {
 				    auto now = RE::Calendar::GetSingleton()->GetDaysPassed();
@@ -416,7 +416,7 @@ namespace QuickLootDD
 		}
 		if (itemChance >= 1) {
 			if (itemInfoData != nullptr) {
-				itemInfoData->totalChance = 1.0;
+				itemInfoData->totalChance = QuickLootDD::Config::chanceLimit;
 			}
 			return QuickLootDD::Config::chanceLimit;
 		}

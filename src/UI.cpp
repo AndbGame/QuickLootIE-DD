@@ -69,6 +69,8 @@ namespace QuickLootDD
 
 		double totalChance = 0;
 		double itemChance = 0;
+		double intensity = 0;
+		double maxAlpha = 0;
 		for (std::size_t cnt = 0; cnt < lootInfo.itemCount; ++cnt) {
 			totalChance = std::max(totalChance, lootInfo.itemChance[cnt].totalChance);
 			itemChance = std::max(itemChance, lootInfo.itemChance[cnt].itemChance);
@@ -81,8 +83,8 @@ namespace QuickLootDD
 			constexpr auto topLeft = ImVec2(0.0f, 0.0f);
 			const auto static bottomRight = ImVec2(io.DisplaySize.x, io.DisplaySize.y);
 
-			double intensity = lootInfo.visualiseMinIntensity + (lootInfo.visualiseMaxIntensity - lootInfo.visualiseMinIntensity) * (totalChance / lootInfo.limitChance);
-			double maxAlpha = (lootInfo.visualiseColorAmax - lootInfo.visualiseColorAmin) * (totalChance / lootInfo.limitChance);
+			intensity = lootInfo.visualiseMinIntensity + (lootInfo.visualiseMaxIntensity - lootInfo.visualiseMinIntensity) * (totalChance / lootInfo.limitChance);
+			maxAlpha = (lootInfo.visualiseColorAmax - lootInfo.visualiseColorAmin) * (totalChance / lootInfo.limitChance);
 
             if (ResetOverlay.load()) {
 				ResetOverlay.store(false);
@@ -92,7 +94,7 @@ namespace QuickLootDD
 				overlayTimer = ImGui::GetTime() - timerTicks;
 			}
 
-			float alpha = lootInfo.visualiseColorAmin + (float)((sin((overlayTimer * intensity)) / 2 + 0.5f) * maxAlpha);
+			float alpha = lootInfo.visualiseColorAmin + (float)((sin(overlayTimer * intensity) / 2 + 0.5f) * maxAlpha);
 
 			drawList->AddImage(srView.Get(), topLeft, bottomRight, ImVec2(0, 0), ImVec2(1, 1), static_cast<ImU32>(ImColor(lootInfo.visualiseColorR, lootInfo.visualiseColorG, lootInfo.visualiseColorB, alpha)));
         }
@@ -106,6 +108,9 @@ namespace QuickLootDD
 				} else {
 					ImGui::Text("%f = %f * %f * %f ", totalChance,  lootInfo.containerChance, lootInfo.locationChance, itemChance);
 				}
+                if (intensity > 0) {
+					ImGui::Text("Intensity: %f; Alpha: %f..%f", intensity, lootInfo.visualiseColorAmin, lootInfo.visualiseColorAmin + maxAlpha);
+                }
 				ImGui::End();
 			}
 		}
