@@ -103,9 +103,17 @@ using json = nlohmann::json;
 
 using uint = uint32_t;
 
+#define DEBUG 0
+
+#if DEBUG == 1
+#	define DEBUG_SPINLOCK 1
+#   define TRACE(...)  {SKSE::log::trace(__VA_ARGS__);}
+#else
+#	define DEBUG_SPINLOCK 0
+#   define TRACE(...)  {}
+#endif
 
 #define LOG(...)    {SKSE::log::info(__VA_ARGS__);}
 #define WARN(...)   {SKSE::log::warn(__VA_ARGS__);}
 #define ERROR(...)  {SKSE::log::error(__VA_ARGS__);}
 #define DEBUG(...)  {SKSE::log::debug(__VA_ARGS__);}
-#define TRACE(...)  {SKSE::log::trace(__VA_ARGS__);}

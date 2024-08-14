@@ -19,6 +19,7 @@ namespace QuickLootDD
 	bool UI::LoadTextureFromFile()
 	{
 		bool result = false;
+		srView = nullptr;
 		const std::filesystem::path overlayPath(R"(Data\Interface\QuickLootIEDD\)" + QuickLootDD::Config::visualiseOverlayFile);
         if (!std::filesystem::exists(overlayPath)) {
 			ERROR("Overlay file not found")
@@ -35,7 +36,7 @@ namespace QuickLootDD
 					DirectX::ScratchImage tmpImage;
 					DirectX::Resize(*image->GetImage(0, 0, 0), screenSize.width, screenSize.height, DirectX::TEX_FILTER_CUBIC, tmpImage);
 
-					image.reset();  // is this needed
+					image.reset();
 					image = std::make_shared<DirectX::ScratchImage>(std::move(tmpImage));
 				}
 
@@ -59,6 +60,9 @@ namespace QuickLootDD
 				pTexture.Reset();
 			}
 		}
+        if (result) {
+			LOG("Loaded file overlay: {}", overlayPath.string())
+        }
 		return result;
 	}
 
@@ -315,9 +319,8 @@ namespace QuickLootDD
 		if (!WndProcHook::func) {
 			ERROR("SetWindowLongPtrA failed!");
 		}
-        if (!LoadTextureFromFile()) {
-			ERROR("LoadTextureFromFile failed!");
-        }
+
+		ReloadOverlay();
 	}
 
 	bool UI::Install()
@@ -336,6 +339,13 @@ namespace QuickLootDD
 	{
 		DEBUG("UI OnDataLoaded");
 		ShowUI.store(true);
+	}
+
+	void UI::ReloadOverlay()
+	{
+		if (!LoadTextureFromFile()) {
+			ERROR("LoadTextureFromFile failed!");
+		}
 	}
 
 	void UI::Close()

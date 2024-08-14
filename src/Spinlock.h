@@ -2,8 +2,6 @@
 
 #include <thread>
 
-#define DEBUG_SPINLOCK 1
-
 namespace QuickLootDD
 {
 	class SpinLock

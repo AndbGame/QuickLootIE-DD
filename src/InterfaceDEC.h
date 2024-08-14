@@ -15,8 +15,8 @@ namespace QuickLootDD
 		static void TriggerTrap(RE::TESObjectREFR* container);
 
 	protected:
-		//static inline RE::TESQuest* dtraps_Quest = nullptr;
 		static inline RE::BGSListForm* dt_containerformlist = nullptr;
+		static inline RE::TESQuest* dtraps_Quest = nullptr;
 		//static inline RE::TESFaction* CurrentFollowerFaction = nullptr;
 		//static inline RE::TESFaction* CurrentHireling = nullptr;
 		//static inline RE::TESFaction* CurrentHireling = nullptr;

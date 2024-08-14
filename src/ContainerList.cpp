@@ -161,12 +161,12 @@ namespace QuickLootDD
 
 		std::vector<SortedData> sortedVector{};
 
+		DEBUG("---------");
 		DEBUG("invalidateContainerData pre:");
 		for (auto it = _containerData.cbegin(); it != _containerData.cend();) {
 			DEBUG("    <{:08X}>: ({}, {}, {})", it->first, it->second.lastTriggered, it->second.lastUsed, it->second.chance);
 			++it;
 		}
-		DEBUG("---------");
 
 		auto cooldown_sec = now * 24 * 60 * 60 - QuickLootDD::Config::containerTriggerCooldown;
 

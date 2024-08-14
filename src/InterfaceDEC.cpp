@@ -21,10 +21,10 @@ namespace QuickLootDD
 		    return false;                                                                                      \
 	    }
 
-		//LOAD_FORM(dtraps_Quest, RE::TESQuest, 0x000D62, "dD Enchanted Chests.esp");
 		if (QuickLootDD::Config::useDECContainerList) {
 			LOAD_FORM(dt_containerformlist, RE::BGSListForm, 0x001829, "dD Enchanted Chests.esp");
 		}
+		LOAD_FORM(dtraps_Quest, RE::TESQuest, 0x000D62, "dD Enchanted Chests.esp");
 		//LOAD_FORM(CurrentFollowerFaction, RE::TESFaction, 0x05C84E, "Skyrim.esm");
 		//LOAD_FORM(CurrentHireling, RE::TESFaction, 0x0BD738, "Skyrim.esm");
 
@@ -45,7 +45,7 @@ namespace QuickLootDD
 	}
 	void InterfaceDeviouslyEnchantedChests::TriggerTrap(RE::TESObjectREFR* container)
 	{
-		SKSE::ModCallbackEvent dTrapEvent{ "dtraps_TriggerTrap", "", 0, container };
+		SKSE::ModCallbackEvent dTrapEvent { "dtraps_TriggerTrap", "", 0, container };
 		SKSE::GetModCallbackEventSource()->SendEvent(&dTrapEvent);
 	}
 }

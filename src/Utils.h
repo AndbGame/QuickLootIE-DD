@@ -38,6 +38,28 @@ namespace QuickLootDD::Utils
 		return (1 << (slot - 30));
 	}
 
+	static inline RE::VMHandle GetHandle(const RE::TESForm* a_form)
+	{
+		auto vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+		auto policy = vm->GetObjectHandlePolicy();
+		return policy->GetHandleForObject(a_form->GetFormType(), a_form);
+	}
+
+	static inline RE::BSTSmartPointer<RE::BSScript::Object> GetScriptObject(const RE::TESForm* a_form, std::string a_class, bool a_create = false)
+	{
+		auto vm = RE::BSScript::Internal::VirtualMachine::GetSingleton();
+		auto handle = GetHandle(a_form);
+
+		RE::BSTSmartPointer<RE::BSScript::Object> object = nullptr;
+		bool found = vm->FindBoundObject(handle, a_class.c_str(), object);
+		if (!found && a_create) {
+			vm->CreateObject2(a_class, object);
+			vm->BindObject(object, handle, false);
+		}
+
+		return object;
+	}
+
 	class WornVisitor : public RE::InventoryChanges::IItemChangeVisitor
 	{
 	public:

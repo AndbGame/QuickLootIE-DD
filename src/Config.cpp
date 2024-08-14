@@ -88,6 +88,7 @@ namespace QuickLootDD
 			LOG("readIniConfig: {}", filename);
 			try {
 				/* MAIN */
+				LOAD_PROPERTY_TREE(logLevel, std::string, "MAIN.logLevel");
 				LOAD_PROPERTY_TREE(baseChanceMin, double, "MAIN.baseChanceMin");
 				if (baseChanceMin < 0) {
 					WARN("readIniConfig: incorrect MAIN.baseChanceMin, adjusted to `0.0` in {}", filename);
@@ -136,8 +137,10 @@ namespace QuickLootDD
 				LOAD_PROPERTY_TREE(containerLimit, int, "MAIN.containerLimit");
 				LOAD_PROPERTY_TREE(containerMaxLimitForInvalidate, int, "MAIN.containerMaxLimitForInvalidate");
 				if (containerMaxLimitForInvalidate < containerLimit) {
+					if (containerMaxLimitForInvalidate != 0) {
+						WARN("readIniConfig: incorrect MAIN.containerMaxLimitForInvalidate, adjusted to {} in {}", containerLimit * 2, filename);
+                    }
 					containerMaxLimitForInvalidate = containerLimit * 2;
-					WARN("readIniConfig: incorrect MAIN.containerMaxLimitForInvalidate, adjusted to {} in {}", containerMaxLimitForInvalidate, filename);
 				}
 
                 LOAD_PROPERTY_TREE_STRING_ARRAY(SafeLocations, "MAIN.SafeLocations");
@@ -236,106 +239,98 @@ namespace QuickLootDD
 			} catch (std::exception& ex) {
 				ERROR("ERROR in [DEC] section in ini file: {} - {}", filename, ex.what());
 			}
-
-			try { /* ITEMS_CHANCE_MULTIPLIER */
-				boost::optional<boost::property_tree::ptree&> items = iniConfig.get_child_optional("ITEMS_CHANCE_MULTIPLIER");
-				if (items.has_value()) {
-				    std::string::size_type name_start_pos = 5;
-					for (const auto& item : items.value()) {
-						try {
-							if (item.first.compare(0, name_start_pos, "Item_") == 0) {
-								std::string::size_type name_end_pos = item.first.find("_", name_start_pos);
-								if (name_end_pos != std::string::npos) {
-									std::string itemName = item.first.substr(name_start_pos, name_end_pos - name_start_pos);
-									if (itemName.size() > 0) {
-										std::string key = item.first.substr(name_end_pos);
-										if (key == "_FormId") {
-											rawItemDefinitions[itemName].formId = std::strtol(item.second.get_value<std::string>("").c_str(), NULL, 0);
-										}
-										if (key == "_PluginFile") {
-											rawItemDefinitions[itemName].plugin = item.second.get_value<std::string>("");
-										}
-										if (key == "_ChanceMultiplier") {
-											rawItemDefinitions[itemName].chance = item.second.get_value<double>(1.0);
-										}
-									}
+            
+			for (const auto& section : iniConfig) {
+				if (section.second.empty()) {
+					continue;
+				}
+				try {
+					std::string::size_type name_start_pos = 11;
+					if (section.first.compare(0, name_start_pos, "BONUS_LOOT_") == 0) {
+						std::string itemName = section.first.substr(name_start_pos);
+						if (itemName.size() == 0) {
+							continue;
+						}
+						auto FormIdOptional = section.second.get_optional<std::string>("FormId");
+						if (FormIdOptional.has_value()) {
+							bonusItemDefinition[itemName].formId = std::strtol(FormIdOptional.value().c_str(), NULL, 0);
+						}
+						auto PluginFileOptional = section.second.get_optional<std::string>("PluginFile");
+						if (PluginFileOptional.has_value()) {
+							bonusItemDefinition[itemName].plugin = PluginFileOptional.value();
+						}
+						auto MinCountOptional = section.second.get_optional<std::int32_t>("MinCount");
+						if (MinCountOptional.has_value()) {
+							bonusItemDefinition[itemName].minCount = MinCountOptional.value();
+						}
+						auto MaxCountOptional = section.second.get_optional<std::int32_t>("MaxCount");
+						if (MaxCountOptional.has_value()) {
+							bonusItemDefinition[itemName].maxCount = MaxCountOptional.value();
+						}
+						if (bonusItemDefinition[itemName].maxCount < bonusItemDefinition[itemName].minCount) {
+							bonusItemDefinition[itemName].maxCount = bonusItemDefinition[itemName].minCount;
+						}
+						auto ChanceOptional = section.second.get_optional<double>("Chance");
+						if (ChanceOptional.has_value()) {
+							bonusItemDefinition[itemName].chance = ChanceOptional.value();
+						}
+						if (bonusItemDefinition[itemName].chance < 0) {
+							bonusItemDefinition[itemName].chance = 0.0;
+						}
+						auto RequirementOptional = section.second.get_optional<std::string>("Requirement");
+						if (RequirementOptional.has_value()) {
+							auto req = ini_string_to_array(RequirementOptional.value());
+							for (const std::string _r : req) {
+								if (_r == "Lockable") {
+									bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::Lockable);
+								}
+								if (_r == "Belt") {
+									bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::Belt);
+								}
+								if (_r == "Bra") {
+									bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::Bra);
+								}
+								if (_r == "Plug") {
+									bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::Plug);
+								}
+								if (_r == "Piercing") {
+									bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::Piercing);
+								}
+								if (_r == "HeavyBondage") {
+									bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::HeavyBondage);
+								}
+								if (_r == "BondageMittens") {
+									bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::BondageMittens);
 								}
 							}
-						} catch (std::exception& ex) {
-							ERROR("ERROR in [ITEMS_CHANCE_MULTIPLIER].{} section in ini file: {} - {}", item.first, filename, ex.what());
 						}
 					}
-				}
-			} catch (std::exception& ex) {
-				ERROR("ERROR in [ITEMS_CHANCE_MULTIPLIER] section in ini file: {} - {}", filename, ex.what());
-			}
 
-			try { /* BONUS_LOOT */
-				boost::optional<boost::property_tree::ptree&> items = iniConfig.get_child_optional("BONUS_LOOT");
-				if (items.has_value()) {
-				std::string::size_type name_start_pos = 5;
-					for (const auto& item : items.value()) {
-						try {
-							if (item.first.compare(0, name_start_pos, "Item_") == 0) {
-								std::string::size_type name_end_pos = item.first.find("_", name_start_pos);
-								if (name_end_pos != std::string::npos) {
-									std::string itemName = item.first.substr(name_start_pos, name_end_pos - name_start_pos);
-									if (itemName.size() > 0) {
-										std::string key = item.first.substr(name_end_pos);
-										if (key == "_FormId") {
-											bonusItemDefinition[itemName].formId = std::strtol(item.second.get_value<std::string>("").c_str(), NULL, 0);
-										}
-										if (key == "_PluginFile") {
-											bonusItemDefinition[itemName].plugin = item.second.get_value<std::string>("");
-										}
-										if (key == "_MinCount") {
-											bonusItemDefinition[itemName].minCount = item.second.get_value<std::int32_t>(1);
-										}
-										if (key == "_MaxCount") {
-											bonusItemDefinition[itemName].maxCount = item.second.get_value<std::int32_t>(1);
-										}
-										if (bonusItemDefinition[itemName].maxCount < bonusItemDefinition[itemName].minCount) {
-											bonusItemDefinition[itemName].maxCount = bonusItemDefinition[itemName].minCount;
-										}
-										if (key == "_Chance") {
-											bonusItemDefinition[itemName].chance = item.second.get_value<double>(0.0);
-										}
-										if (key == "_Requirement") {
-											auto req = ini_string_to_array(item.second.get_value<std::string>("ANY"));
-											for (const std::string _r : req) {
-												if (_r == "Lockable") {
-													bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::Lockable);
-												}
-												if (_r == "Belt") {
-													bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::Belt);
-												}
-												if (_r == "Bra") {
-													bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::Bra);
-												}
-												if (_r == "Plug") {
-													bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::Plug);
-												}
-												if (_r == "Piercing") {
-													bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::Piercing);
-												}
-												if (_r == "HeavyBondage") {
-													bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::HeavyBondage);
-												}
-												if (_r == "BondageMittens") {
-													bonusItemDefinition[itemName].requirement.set(BonusItemDefinition::RequirementFlags::BondageMittens);
-												}
-											}
-										}
-									}
-								}
-							}
-						} catch (std::exception& ex) {
-							ERROR("ERROR in [BONUS_LOOT].{} section in ini file: {} - {}", item.first, filename, ex.what());
+					name_start_pos = 13;
+					if (section.first.compare(0, name_start_pos, "ITEMS_CHANCE_") == 0) {
+						std::string itemName = section.first.substr(name_start_pos);
+						if (itemName.size() == 0) {
+							continue;
+						}
+						auto FormIdOptional = section.second.get_optional<std::string>("FormId");
+						if (FormIdOptional.has_value()) {
+							rawItemDefinitions[itemName].formId = std::strtol(FormIdOptional.value().c_str(), NULL, 0);
+						}
+						auto PluginFileOptional = section.second.get_optional<std::string>("PluginFile");
+						if (PluginFileOptional.has_value()) {
+							rawItemDefinitions[itemName].plugin = PluginFileOptional.value();
+						}
+						auto ChanceMultiplierOptional = section.second.get_optional<double>("ChanceMultiplier");
+						if (ChanceMultiplierOptional.has_value()) {
+							rawItemDefinitions[itemName].chance = ChanceMultiplierOptional.value();
+						}
+						if (rawItemDefinitions[itemName].chance < 0) {
+							rawItemDefinitions[itemName].chance = 0.0;
 						}
 					}
+				} catch (std::exception& ex) {
+					ERROR("ERROR in [{}] section in ini file: {} - {}", section.first, filename, ex.what());
 				}
-			} catch (std::exception& ex) {
-				ERROR("ERROR in [BONUS_LOOT] section in ini file: {} - {}", filename, ex.what());
 			}
 
 		} catch (std::exception& ex) {

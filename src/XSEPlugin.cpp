@@ -47,6 +47,7 @@ void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
 		if (QuickLootDD::Config::reloadConfigOnLoadSave) {
 			QuickLootDD::Config::readIniConfig();
 			QuickLootDD::Manager::LoadForms();
+			QuickLootDD::UI::ReloadOverlay();
 		}
 		break;
 	}
@@ -58,6 +59,8 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 	LOG("Loaded plugin {} {}", Plugin::NAME, Plugin::VERSION.string());
 	SKSE::Init(a_skse);
 	QuickLootDD::Config::readIniConfig();
+
+	spdlog::default_logger()->set_level(spdlog::level::from_str(QuickLootDD::Config::logLevel));
 
     auto message = SKSE::GetMessagingInterface();
 	if (!message->RegisterListener(MessageHandler)) {

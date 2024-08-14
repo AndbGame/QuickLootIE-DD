@@ -1,13 +1,12 @@
 #pragma once
 
-#include <QuickLootIntegrations.h>
+#include <QuickLootAPI.h>
 
 #include "ContainerList.h"
 #include "Config.h"
 
 namespace QuickLootDD
 {
-    using Element = QuickLoot::Integrations::Element;
     using BonusItemFlag = Config::BonusItemDefinition::RequirementFlags;
 
     struct UIInfoData;
@@ -45,11 +44,11 @@ namespace QuickLootDD
 		static void installEventSink();
 		static bool LoadForms();
 
-		static void onQLDoTake(RE::Actor* actor, RE::TESObjectREFR* container, Element* elements, std::size_t elementsCount);
-		static void onQLDoSelect(RE::Actor* actor, RE::TESObjectREFR* container, Element* elements, std::size_t elementsCount);
+		static void onQLDoTake(RE::Actor* actor, RE::TESObjectREFR* container, const QuickLoot::Element* elements, std::size_t elementsCount);
+		static void onQLDoSelect(RE::Actor* actor, RE::TESObjectREFR* container, const QuickLoot::Element* elements, std::size_t elementsCount);
 		static void onQLDoOpened(RE::TESObjectREFR* container);
-		static QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult onQLDoOpening(RE::TESObjectREFR* container);
-		static void onQLDoInvalidated(RE::TESObjectREFR* container, Element* elements, std::size_t elementsCount);
+		static QuickLoot::Events::HandleResult onQLDoOpening(RE::TESObjectREFR* container);
+		static void onQLDoInvalidated(RE::TESObjectREFR* container, const QuickLoot::Element* elements, std::size_t elementsCount);
 		static void onQLDoClosed();
 		static void invalidateEquipment();
         
@@ -77,8 +76,8 @@ namespace QuickLootDD
 		static bool isContainerAllowed(RE::TESObjectREFR* container);
 		static bool isTriggerAllowed(RE::TESObjectREFR* container, ContainerData* contData);
 
-		static std::vector<double> getTakeLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, Element* element, std::size_t elementsCount);
-		static std::vector<double> getSelectLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, Element* element, std::size_t elementsCount, UIInfoData* infoData);
+		static std::vector<double> getTakeLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, const QuickLoot::Element* element, std::size_t elementsCount);
+		static std::vector<double> getSelectLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, const QuickLoot::Element* element, std::size_t elementsCount, UIInfoData* infoData);
 		static double getItemChance(const double baseChance, RE::TESForm* object, std::size_t elementsCount, UIItemInfoData* itemInfoData = nullptr);
 		static double getLocationChance(RE::Actor* actor);
 

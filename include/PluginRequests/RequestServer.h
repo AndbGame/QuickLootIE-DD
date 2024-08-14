@@ -105,6 +105,14 @@ namespace PluginRequests
 		}
 
 	public:
+		RequestServer() = default;
+		~RequestServer() = default;
+
+		RequestServer(RequestServer const&) = delete;
+		RequestServer(RequestServer const&&) = delete;
+		RequestServer operator=(RequestServer&) = delete;
+		RequestServer operator=(RequestServer&&) = delete;
+
 		void Init(uint16_t apiMajorVersion, uint16_t apiMinorVersion)
 		{
 			if (_isInitialized) {

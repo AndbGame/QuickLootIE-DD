@@ -92,7 +92,7 @@ namespace QuickLootDD
 		return true;
 	}
 
-	void Manager::onQLDoTake(RE::Actor* actor, RE::TESObjectREFR* container, Element* elements, std::size_t elementsCount)
+	void Manager::onQLDoTake(RE::Actor* actor, RE::TESObjectREFR* container, const QuickLoot::Element* elements, std::size_t elementsCount)
 	{
 
 		if (!trySetBusy()) {
@@ -170,7 +170,7 @@ namespace QuickLootDD
 		setFree();
 	}
 
-	void Manager::onQLDoSelect(RE::Actor* actor, RE::TESObjectREFR* container, Element* elements, std::size_t elementsCount)
+	void Manager::onQLDoSelect(RE::Actor* actor, RE::TESObjectREFR* container, const QuickLoot::Element* elements, std::size_t elementsCount)
 	{
 		if (!QuickLootDD::Config::visualiseChance) {
 			return;
@@ -234,13 +234,13 @@ namespace QuickLootDD
 	{
 	}
 
-	QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult Manager::onQLDoOpening(RE::TESObjectREFR* container)
+	QuickLoot::Events::HandleResult Manager::onQLDoOpening(RE::TESObjectREFR* container)
 	{
 		if (trySetBusy()) {
 		    auto equipmentInfo = getPlayerEquipmentInfo();
 			if (QuickLootDD::Config::RestrictLootMenu && (equipmentInfo.bondageMittens || equipmentInfo.heavyBondage)) {
 				setFree();
-			    return QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult::kStop;
+				return QuickLoot::Events::HandleResult::kStop;
 		    }
 
 		    if (container->HasContainer() && isAllowedActorLocation(RE::PlayerCharacter::GetSingleton()) && isContainerAllowed(container)) {
@@ -281,7 +281,7 @@ namespace QuickLootDD
 		} else {
 			TRACE("onQLDoOpening is busy");
 		}
-		return QuickLoot::Integrations::OpeningLootMenuHandler::HandleResult::kContinue;
+		return QuickLoot::Events::HandleResult::kContinue;
 	}
 
 	void Manager::onQLDoClosed()
@@ -294,7 +294,7 @@ namespace QuickLootDD
 		invalidateEquip.store(true);
 	}
 
-	void Manager::onQLDoInvalidated(RE::TESObjectREFR* container, Element*, std::size_t elementsCount)
+	void Manager::onQLDoInvalidated(RE::TESObjectREFR* container, const QuickLoot::Element*, std::size_t elementsCount)
 	{
 		if (!container) {
 			UI::Close();
@@ -310,7 +310,7 @@ namespace QuickLootDD
 		}
 	}
 
-    std::vector<double> Manager::getTakeLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, Element* element, std::size_t elementsCount)
+    std::vector<double> Manager::getTakeLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, const QuickLoot::Element* element, std::size_t elementsCount)
 	{
 		std::vector<double> chances;
 
@@ -323,7 +323,7 @@ namespace QuickLootDD
 		return chances;
 	}
 
-	std::vector<double> Manager::getSelectLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, Element* element, std::size_t elementsCount, UIInfoData* infoData)
+	std::vector<double> Manager::getSelectLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, const QuickLoot::Element* element, std::size_t elementsCount, UIInfoData* infoData)
 	{
 		std::vector<double> chances;
 

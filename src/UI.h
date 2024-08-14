@@ -119,6 +119,7 @@ namespace QuickLootDD
 
 		static bool Install();
 		static void OnDataLoaded();
+		static void ReloadOverlay();
 
         static void Close();
 		static void ShowDECInfo(UIInfoData data);

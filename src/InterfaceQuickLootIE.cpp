@@ -1,13 +1,13 @@
 #include "InterfaceQuickLootIE.h"
 
-#include <QuickLootIntegrations.h>
+#include <QuickLootAPI.h>
 #include <PluginRequests\RequestClient.h>
 #include "Config.h"
 #include "Manager.h"
 
 namespace QuickLootDD
 {
-	static inline std::string loggerHandlerTaken(Element* elements, std::size_t elementsCount)
+	static inline std::string loggerHandlerTaken(const QuickLoot::Element* elements, std::size_t elementsCount)
     {
 		std::string items = "";
 		for (std::size_t i = 0; i < elementsCount; ++i) {
@@ -25,17 +25,17 @@ namespace QuickLootDD
 		return items;
     }
 
-    static inline void loggerHandlerTaken(QuickLoot::Integrations::TakeHandler::TakeEvent* evt)
+    static inline void loggerHandlerTaken(QuickLoot::TakeItemEvent* evt)
 	{
 		LOG("Actor <{:08X}:{}> take : {}", evt->actor->GetFormID(), evt->actor->GetName(), loggerHandlerTaken(evt->elements, evt->elementsCount));
 	};
 
-	static inline void loggerHandlerSelect(QuickLoot::Integrations::SelectHandler::SelectEvent* evt)
+	static inline void loggerHandlerSelect(QuickLoot::SelectItemEvent* evt)
 	{
 		LOG("Actor <{:08X}:{}> select : {}", evt->actor->GetFormID(), evt->actor->GetName(), loggerHandlerTaken(evt->elements, evt->elementsCount));
 	}
 
-	static inline void loggerHandlerLootOpenMenu(QuickLoot::Integrations::OpenLootMenuHandler::OpenLootMenuEvent* evt)
+	static inline void loggerHandlerLootOpenMenu(QuickLoot::OpenLootMenuEvent* evt)
 	{
 		std::string source = "";
 		if (evt->container) {
@@ -45,84 +45,84 @@ namespace QuickLootDD
 		}
 		LOG("Loot menu opened {}", source);
 	}
-	static inline void loggerHandlerLootCloseMenu(QuickLoot::Integrations::CloseLootMenuHandler::CloseLootMenuEvent* )
+	static inline void loggerHandlerLootCloseMenu(QuickLoot::CloseLootMenuEvent*)
 	{
 		LOG("Loot menu closed");
 	}
-	static inline void loggerHandlerInvalidateLootMenu(QuickLoot::Integrations::InvalidateLootMenuHandler::InvalidateLootMenuEvent* evt)
+	static inline void loggerHandlerInvalidateLootMenu(QuickLoot::InvalidateLootMenuEvent* evt)
 	{
 		LOG("Loot menu invalidated : {}", loggerHandlerTaken(evt->elements, evt->elementsCount));
 	}
 
-	static inline void TakeHandler(QuickLoot::Integrations::TakeHandler::TakeEvent* evt)
+	static inline void TakeHandler(QuickLoot::TakeItemEvent* evt)
 	{
 		if (evt->actor && evt->elementsCount > 0) {
 			QuickLootDD::Manager::onQLDoTake(evt->actor, evt->container, evt->elements, evt->elementsCount);
         }
 	};
 
-	static inline void SelectHandler(QuickLoot::Integrations::SelectHandler::SelectEvent* evt)
+	static inline void SelectHandler(QuickLoot::SelectItemEvent* evt)
 	{
 		QuickLootDD::Manager::onQLDoSelect(evt->actor, evt->container, evt->elements, evt->elementsCount);
 	};
 
-	static inline void OpenLootMenuHandler(QuickLoot::Integrations::OpenLootMenuHandler::OpenLootMenuEvent* evt)
+	static inline void OpenLootMenuHandler(QuickLoot::OpenLootMenuEvent* evt)
 	{
 		QuickLootDD::Manager::onQLDoOpened(evt->container);
 	}
-	static inline void OpeningLootMenuHandler(QuickLoot::Integrations::OpeningLootMenuHandler::OpeningLootMenuEvent* evt)
+	static inline void OpeningLootMenuHandler(QuickLoot::OpeningLootMenuEvent* evt)
 	{
 		evt->result = QuickLootDD::Manager::onQLDoOpening(evt->container);
 	}
-	static inline void CloseLootMenuHandler(QuickLoot::Integrations::CloseLootMenuHandler::CloseLootMenuEvent* )
+	static inline void CloseLootMenuHandler(QuickLoot::CloseLootMenuEvent*)
 	{
 		QuickLootDD::Manager::onQLDoClosed();
 	}
-	static inline void InvalidateLootMenuHandler(QuickLoot::Integrations::InvalidateLootMenuHandler::InvalidateLootMenuEvent* evt)
+	static inline void InvalidateLootMenuHandler(QuickLoot::InvalidateLootMenuEvent* evt)
 	{
 		QuickLootDD::Manager::onQLDoInvalidated(evt->container, evt->elements, evt->elementsCount);
 	}
 
 	bool InterfaceQuickLootIE::Init()
 	{
-		QuickLoot::Integrations::QuickLootAPI::Init();
-        if (!QuickLoot::Integrations::QuickLootAPI::IsReady()) {
+		QuickLoot::QuickLootAPI::Init();
+        if (!QuickLoot::QuickLootAPI::IsReady()) {
 			ERROR("Integration with QuickLootAPI is not ready");
         }
 		if (QuickLootDD::Config::QuickLootLogger) {
-			if (!QuickLoot::Integrations::QuickLootAPI::RegisterTakeHandler(loggerHandlerTaken)) {
+			if (!QuickLoot::QuickLootAPI::RegisterTakeItemHandler(loggerHandlerTaken)) {
 				ERROR("loggerHandlerTaken for QuickLootAPI not registered");
 			}
-			if (!QuickLoot::Integrations::QuickLootAPI::RegisterSelectHandler(loggerHandlerSelect)) {
+			if (!QuickLoot::QuickLootAPI::RegisterSelectItemHandler(loggerHandlerSelect)) {
 				ERROR("loggerHandlerSelect for QuickLootAPI not registered");
 			}
-			if (!QuickLoot::Integrations::QuickLootAPI::RegisterOpenLootMenuHandler(loggerHandlerLootOpenMenu)) {
+			if (!QuickLoot::QuickLootAPI::RegisterOpenLootMenuHandler(loggerHandlerLootOpenMenu)) {
 				ERROR("loggerHandlerLootOpenMenu for QuickLootAPI not registered");
 			}
-			if (!QuickLoot::Integrations::QuickLootAPI::RegisterInvalidateLootMenuHandler(loggerHandlerInvalidateLootMenu)) {
+			if (!QuickLoot::QuickLootAPI::RegisterInvalidateLootMenuHandler(loggerHandlerInvalidateLootMenu)) {
 				ERROR("loggerHandlerInvalidateLootMenu for QuickLootAPI not registered");
 			}
-			if (!QuickLoot::Integrations::QuickLootAPI::RegisterCloseLootMenuHandler(loggerHandlerLootCloseMenu)) {
+			if (!QuickLoot::QuickLootAPI::RegisterCloseLootMenuHandler(loggerHandlerLootCloseMenu)) {
 				ERROR("loggerHandlerLootCloseMenu for QuickLootAPI not registered");
 			}
 		}
 
-		if (!QuickLoot::Integrations::QuickLootAPI::RegisterTakeHandler(TakeHandler)) {
+		if (!QuickLoot::QuickLootAPI::RegisterTakeItemHandler(TakeHandler)) {
 			ERROR("TakenHandler for QuickLootAPI not registered");
 		}
-		if (!QuickLoot::Integrations::QuickLootAPI::RegisterSelectHandler(SelectHandler)) {
+		if (!QuickLoot::QuickLootAPI::RegisterSelectItemHandler(SelectHandler)) {
 			ERROR("SelectHandler for QuickLootAPI not registered");
 		}
-		if (!QuickLoot::Integrations::QuickLootAPI::RegisterOpenLootMenuHandler(OpenLootMenuHandler)) {
+		if (!QuickLoot::QuickLootAPI::RegisterOpenLootMenuHandler(OpenLootMenuHandler)) {
 			ERROR("OpenLootMenuHandler for QuickLootAPI not registered");
 		}
-		if (!QuickLoot::Integrations::QuickLootAPI::RegisterOpeningLootMenuHandler(OpeningLootMenuHandler)) {
+		if (!QuickLoot::QuickLootAPI::RegisterOpeningLootMenuHandler(OpeningLootMenuHandler)) {
 			ERROR("OpeningLootMenuHandler for QuickLootAPI not registered");
 		}
-		if (!QuickLoot::Integrations::QuickLootAPI::RegisterInvalidateLootMenuHandler(InvalidateLootMenuHandler)) {
+		if (!QuickLoot::QuickLootAPI::RegisterInvalidateLootMenuHandler(InvalidateLootMenuHandler)) {
 			ERROR("InvalidateLootMenuHandler for QuickLootAPI not registered");
 		}
-		if (!QuickLoot::Integrations::QuickLootAPI::RegisterCloseLootMenuHandler(CloseLootMenuHandler)) {
+		if (!QuickLoot::QuickLootAPI::RegisterCloseLootMenuHandler(CloseLootMenuHandler)) {
 			ERROR("CloseLootMenuHandler for QuickLootAPI not registered");
 		}
 

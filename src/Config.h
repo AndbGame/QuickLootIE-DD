@@ -35,6 +35,8 @@ namespace QuickLootDD
 		};
 		static inline std::map<std::string, BonusItemDefinition> bonusItemDefinition;
 
+		static inline std::string logLevel = "warning";
+
 		static inline bool allowDeadBody = false;
 		static inline bool allowActorTypeNPC = false;
 		static inline bool allowActorTypeCreature = false;
@@ -53,7 +55,7 @@ namespace QuickLootDD
 		static inline bool resetChanceOnLastItem = false;
 
 		static inline int containerLimit = 100;
-		static inline int containerMaxLimitForInvalidate = 100;
+		static inline int containerMaxLimitForInvalidate = 0;
         
 		static inline std::vector<std::string> SafeLocations = {};
 
