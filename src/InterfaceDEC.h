@@ -11,7 +11,7 @@ namespace QuickLootDD
 		static bool LoadForms();
 		static void RevertState(SKSE::SerializationInterface* serializationInterface);
 
-		static bool isContainerAllowed(const RE::TESForm* container);
+		static bool isContainerAllowed(const RE::TESObjectREFR* container);
 		static void TriggerTrap(RE::TESObjectREFR* container);
 
 	protected:

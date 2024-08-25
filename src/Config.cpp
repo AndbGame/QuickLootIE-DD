@@ -165,6 +165,9 @@ namespace QuickLootDD
 				LOAD_PROPERTY_TREE(useItemChanceMultiplier, bool, "MAIN.useItemChanceMultiplier");
 				LOAD_PROPERTY_TREE(useCountOfItemsChanceMultiplier, bool, "MAIN.useCountOfItemsChanceMultiplier");
 
+				LOAD_PROPERTY_TREE(useItemCostChanceMultiplier, bool, "MAIN.useItemCostChanceMultiplier");
+
+				LOAD_PROPERTY_TREE(useItemTypeChanceMultiplier, bool, "MAIN.useItemTypeChanceMultiplier");
 				LOAD_PROPERTY_TREE(ScrollItemChanceMultiplier, double, "MAIN.ScrollItemChanceMultiplier");
 				LOAD_PROPERTY_TREE(ArmorItemChanceMultiplier, double, "MAIN.ArmorItemChanceMultiplier");
 				LOAD_PROPERTY_TREE(BookItemChanceMultiplier, double, "MAIN.BookItemChanceMultiplier");
