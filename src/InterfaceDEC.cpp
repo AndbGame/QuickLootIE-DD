@@ -2,6 +2,7 @@
 
 #include "Config.h"
 #include "UI.h"
+#include "Utils.h"
 #include "Serialization.h"
 
 namespace QuickLootDD
@@ -36,10 +37,29 @@ namespace QuickLootDD
 	{
 	}
 
-	bool InterfaceDeviouslyEnchantedChests::isContainerAllowed(const RE::TESForm* container)
+	bool InterfaceDeviouslyEnchantedChests::isContainerAllowed(const RE::TESObjectREFR* container)
 	{
+		if (dtraps_Quest) {
+			auto dtraps_mcm = Utils::GetScriptObject(dtraps_Quest, "dtraps_mcm");
+			auto lootedlistsize = dtraps_mcm->GetProperty("lootedlistsize")->GetUInt();
+			//DEBUG("InterfaceDeviouslyEnchantedChests::isContainerAllowed lootedlistsize {}/{}", dtraps_mcm->GetProperty("lootedlistsize")->GetSInt(), dtraps_mcm->GetProperty("lootedlistsize")->GetUInt());
+			auto lastlooted = dtraps_mcm->GetProperty("lastlooted")->GetArray();
+			int limit = lootedlistsize < lastlooted->size() ? lootedlistsize : lastlooted->size();
+			for (int i = 0; i < limit; i++) {
+				auto& val = lastlooted->data()[i];
+				//DEBUG("InterfaceDeviouslyEnchantedChests::isContainerAllowed data {:08X}/{:08X}", val.GetSInt(), val.GetUInt());
+				if (val.IsInt() && val.GetUInt() == container->GetFormID()) {
+					DEBUG("InterfaceDeviouslyEnchantedChests::isContainerAllowed is lastlooted");
+					return false;
+				}
+            }
+		}
+		auto baseObjContainer = container->GetBaseObject();
+		if (baseObjContainer == nullptr) {
+			return false;
+		}
 		if (QuickLootDD::Config::useDECContainerList && dt_containerformlist) {
-			return dt_containerformlist->HasForm(container);
+			return dt_containerformlist->HasForm(baseObjContainer);
 		}
 		return true;
 	}

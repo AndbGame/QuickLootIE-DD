@@ -69,8 +69,10 @@ namespace QuickLootDD
 		static inline double DungeonChanceMultiplier = 1.0;
 
 		static inline bool useItemChanceMultiplier = true;
-		static inline bool useCountOfItemsChanceMultiplier = true;
 
+		static inline bool useItemCostChanceMultiplier = true;
+
+        static inline bool useItemTypeChanceMultiplier = true;
         static inline double ScrollItemChanceMultiplier = 1.0;
 		static inline double ArmorItemChanceMultiplier = 1.0;
 		static inline double BookItemChanceMultiplier = 1.0;
@@ -82,6 +84,8 @@ namespace QuickLootDD
 		static inline double KeyMasterItemChanceMultiplier = 1.0;
 		static inline double AlchemyItemChanceMultiplier = 1.0;
 		static inline double SoulGemItemChanceMultiplier = 1.0;
+
+		static inline bool useCountOfItemsChanceMultiplier = true;
 
 		static inline bool visualiseChance = false;
 		static inline bool visualiseChanceVerbose = false;

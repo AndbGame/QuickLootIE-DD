@@ -88,6 +88,20 @@ namespace QuickLootDD
 			}
 		}
 
+        lvlGoldList.clear();
+
+        if (QuickLootDD::Config::useItemCostChanceMultiplier) {
+			// LvlQuestReward01Small [LVLI:000C0404]
+			if (const RE::TESLevItem* leveledList = handler->LookupForm<RE::TESLevItem>(0xC0404, "Skyrim.esm")) {
+				for (auto it = leveledList->entries.cbegin(); it != leveledList->entries.cend(); ++it) {
+					if (it->form->GetFormID() == 0xF) {
+						lvlGoldList[it->level] = it->count;
+					}
+				}
+			}
+		}
+
+
 #undef LOAD_FORM
 		return true;
 	}
@@ -318,7 +332,7 @@ namespace QuickLootDD
 		auto locationChance = getLocationChance(actor);
 
 		for (std::size_t i = 0; i < elementsCount; ++i) {
-			chances.push_back(getItemChance(containerChance * locationChance, element[i].object, element[i].count));
+			chances.push_back(getItemChance(containerChance * locationChance, element[i].object, element[i].count, actor->GetLevel()));
 		}
 		return chances;
 	}
@@ -335,7 +349,7 @@ namespace QuickLootDD
 
 		for (std::size_t i = 0; i < elementsCount; ++i) {
 			UIItemInfoData itemInfoData;
-			chances.push_back(getItemChance(containerChance * locationChance, element[i].object, element[i].count, &itemInfoData));
+			chances.push_back(getItemChance(containerChance * locationChance, element[i].object, element[i].count, actor->GetLevel(), &itemInfoData));
 			if (i < UIItemInfoDataLength) {
 				infoData->itemChance[i] = itemInfoData;
 				infoData->itemCount = i + 1;
@@ -344,7 +358,7 @@ namespace QuickLootDD
 		return chances;
 	}
 
-	double Manager::getItemChance(const double baseChance, RE::TESForm* object, std::size_t elementsCount, UIItemInfoData* itemInfoData)
+	double Manager::getItemChance(const double baseChance, RE::TESForm* object, std::size_t elementsCount, std::uint16_t lvl, UIItemInfoData* itemInfoData)
 	{
 		double itemChance = 1.0;
 
@@ -361,41 +375,63 @@ namespace QuickLootDD
 		if (auto search = itemChances.find(object->GetFormID()); search != itemChances.end()) {
 			itemChance = search->second;
 		} else {
-			switch (object->formType.get()) {
-			case RE::FormType::Scroll:
-				itemChance = QuickLootDD::Config::ScrollItemChanceMultiplier;
-				break;
-			case RE::FormType::Armor:
-				itemChance = QuickLootDD::Config::ArmorItemChanceMultiplier;
-				break;
-			case RE::FormType::Book:
-				itemChance = QuickLootDD::Config::BookItemChanceMultiplier;
-				break;
-			case RE::FormType::Ingredient:
-				itemChance = QuickLootDD::Config::IngredientItemChanceMultiplier;
-				break;
-			case RE::FormType::Light:
-				itemChance = QuickLootDD::Config::LightItemChanceMultiplier;
-				break;
-			case RE::FormType::Misc:
-				itemChance = QuickLootDD::Config::MiscItemChanceMultiplier;
-				break;
-			case RE::FormType::Weapon:
-				itemChance = QuickLootDD::Config::WeaponItemChanceMultiplier;
-				break;
-			case RE::FormType::Ammo:
-				itemChance = QuickLootDD::Config::AmmoItemChanceMultiplier;
-				break;
-			case RE::FormType::KeyMaster:
-				itemChance = QuickLootDD::Config::KeyMasterItemChanceMultiplier;
-				break;
-			case RE::FormType::AlchemyItem:
-				itemChance = QuickLootDD::Config::AlchemyItemChanceMultiplier;
-				break;
-			case RE::FormType::SoulGem:
-				itemChance = QuickLootDD::Config::SoulGemItemChanceMultiplier;
-				break;
+			if (QuickLootDD::Config::useItemTypeChanceMultiplier) {
+				switch (object->formType.get()) {
+				case RE::FormType::Scroll:
+					itemChance *= QuickLootDD::Config::ScrollItemChanceMultiplier;
+					break;
+				case RE::FormType::Armor:
+					itemChance *= QuickLootDD::Config::ArmorItemChanceMultiplier;
+					break;
+				case RE::FormType::Book:
+					itemChance *= QuickLootDD::Config::BookItemChanceMultiplier;
+					break;
+				case RE::FormType::Ingredient:
+					itemChance *= QuickLootDD::Config::IngredientItemChanceMultiplier;
+					break;
+				case RE::FormType::Light:
+					itemChance *= QuickLootDD::Config::LightItemChanceMultiplier;
+					break;
+				case RE::FormType::Misc:
+					itemChance *= QuickLootDD::Config::MiscItemChanceMultiplier;
+					break;
+				case RE::FormType::Weapon:
+					itemChance *= QuickLootDD::Config::WeaponItemChanceMultiplier;
+					break;
+				case RE::FormType::Ammo:
+					itemChance *= QuickLootDD::Config::AmmoItemChanceMultiplier;
+					break;
+				case RE::FormType::KeyMaster:
+					itemChance *= QuickLootDD::Config::KeyMasterItemChanceMultiplier;
+					break;
+				case RE::FormType::AlchemyItem:
+					itemChance *= QuickLootDD::Config::AlchemyItemChanceMultiplier;
+					break;
+				case RE::FormType::SoulGem:
+					itemChance *= QuickLootDD::Config::SoulGemItemChanceMultiplier;
+					break;
+				}
 			}
+			if (QuickLootDD::Config::useItemCostChanceMultiplier) {
+				std::uint16_t leveledBaseGold = 0;
+				for (auto it = lvlGoldList.cbegin(); it != lvlGoldList.cend(); ++it) {
+					if (leveledBaseGold == 0) {
+						leveledBaseGold = it->second;
+					}
+                    if (lvl > it->first) {
+						break;
+                    }
+					leveledBaseGold = it->second;
+				}
+				if (leveledBaseGold > 0) {
+					auto cost = object->GetGoldValue();
+                    if (cost <= 0) {
+						cost = 1; // fallback to 1 Gold per item
+					}
+					DEBUG("getItemChance::useItemCostChanceMultiplier - lvl: {}; cost: {}; leveledBaseGold: {}", lvl, cost, leveledBaseGold);
+					itemChance *= static_cast<double>(cost) / leveledBaseGold;
+                }
+            }
 		}
 
 		if (itemInfoData != nullptr) {
@@ -468,11 +504,11 @@ namespace QuickLootDD
 		auto now = RE::Calendar::GetSingleton()->GetDaysPassed();
 
 		if ((now * 24 * 60 * 60) < ((containerList.getLastTriggered() * 24 * 60 * 60) + (QuickLootDD::Config::globalTriggerCooldown))) {
-			//TRACE("isTriggerAllowed global cooldown");
+			DEBUG("isTriggerAllowed global cooldown");
 			return false;
 		}
 		if ((now * 24 * 60 * 60) < ((contData->lastTriggered * 24 * 60 * 60) + (QuickLootDD::Config::containerTriggerCooldown))) {
-			//TRACE("isTriggerAllowed container cooldown");
+			DEBUG("isTriggerAllowed container cooldown");
 			return false;
 		}
 
@@ -491,7 +527,7 @@ namespace QuickLootDD
 			return true;
 		}
 		if (location->HasAnyKeywordByEditorID(QuickLootDD::Config::SafeLocations)) {
-			//DEBUG("getLocationChance SafeLocation");
+			DEBUG("isAllowedActorLocation = false");
 			return false;
 		}
 		return true;
@@ -527,14 +563,8 @@ namespace QuickLootDD
 			}
 		}
 
-		auto baseObjContainer = container->GetBaseObject();
-		if (baseObjContainer == nullptr) {
-			//DEBUG("isContainerAllowed Base container in nullptr");
-			return false;
-		}
-
-        if (!InterfaceDeviouslyEnchantedChests::isContainerAllowed(baseObjContainer)) {
-			DEBUG("isContainerAllowed <{:08X}:{}> not allowed by DEC", baseObjContainer->GetFormID(), baseObjContainer->GetName());
+        if (!InterfaceDeviouslyEnchantedChests::isContainerAllowed(container)) {
+			DEBUG("isContainerAllowed <{:08X}:{}> not allowed by DEC", container->GetFormID(), container->GetName());
 			return false;
 		}
 		return true;

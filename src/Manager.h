@@ -60,6 +60,7 @@ namespace QuickLootDD
 		static inline std::atomic<bool> isBusy = false;
 		static inline std::atomic<bool> invalidateEquip = true;
 		static inline std::map<RE::FormID, double> itemChances;
+		static inline std::map<std::uint16_t, std::uint16_t> lvlGoldList;
 		static inline std::vector<BonusItem> bonusLoot;
 		static inline ContainerList containerList;
 		static inline PlayerEquipmentInfo playerEquipmentInfo;
@@ -78,7 +79,7 @@ namespace QuickLootDD
 
 		static std::vector<double> getTakeLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, const QuickLoot::Element* element, std::size_t elementsCount);
 		static std::vector<double> getSelectLootChance(RE::Actor* actor, RE::TESObjectREFR* container, ContainerData* contData, const QuickLoot::Element* element, std::size_t elementsCount, UIInfoData* infoData);
-		static double getItemChance(const double baseChance, RE::TESForm* object, std::size_t elementsCount, UIItemInfoData* itemInfoData = nullptr);
+		static double getItemChance(const double baseChance, RE::TESForm* object, std::size_t elementsCount, std::uint16_t lvl, UIItemInfoData* itemInfoData = nullptr);
 		static double getLocationChance(RE::Actor* actor);
 
 		static double getContainerChance(RE::TESObjectREFR* container, ContainerData* contData);
